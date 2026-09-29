@@ -1,4 +1,4 @@
-## Automated TWRP compilation based on Github Action
+## Automated TWRP/CUSTOM RECOVERY compilation based on Github Action
 
 ## Advertising
 
