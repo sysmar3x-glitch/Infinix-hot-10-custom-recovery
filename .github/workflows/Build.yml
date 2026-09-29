@@ -7,6 +7,7 @@ jobs:
   build:
     name: Compile Recovery
     runs-on: ubuntu-22.04
+    timeout-minutes: 360
 
     steps:
       - name: Set up build environment
