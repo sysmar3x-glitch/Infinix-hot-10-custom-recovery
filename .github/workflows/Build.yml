@@ -10,20 +10,22 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: Maximize Build Space
+      - name: Maximize Build Space & Disable OOM Killer
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           sudo apt-get clean
+          # Forcefully disable Ubuntu's aggressive Out-Of-Memory daemon
+          sudo systemctl disable --now systemd-oomd || true
           df -h
 
       - name: Allocate Swap Space
         run: |
           sudo swapoff -a
           sudo rm -f /swapfile
-          # 12GB swap: The perfect balance between RAM overhead and SSD space
+          # 12GB Swap - With systemd-oomd dead, the kernel will use this safely
           sudo dd if=/dev/zero of=/swapfile bs=1M count=12288 status=progress
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
@@ -58,13 +60,11 @@ jobs:
           export ALLOW_MISSING_DEPENDENCIES=true
           export FOX_BUILD_DEVICE=X682C
           export LC_ALL="C"
-          export SOONG_GEN_NINJA_ARGS="-j2"
-          export NINJA_ARGS="-j2"
           export _JAVA_OPTIONS="-Xmx4g"
           lunch twrp_X682C-eng
           set -e
-          # Reintroducing -j2 throttle + building ONLY recoveryimage
-          make -j2 recoveryimage
+          # Unleash full multi-core compilation now that the assassin daemon is dead
+          mka recoveryimage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
