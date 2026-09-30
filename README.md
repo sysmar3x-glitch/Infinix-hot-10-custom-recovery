@@ -57,6 +57,7 @@ lunch twrp_X682C-eng
 mka recoveryimage
 
 Your compiled recovery will be output to: out/target/product/X682C/recovery.img
+```
 ⚡ Installation Guide
  * Unlock your device's bootloader.
  * Reboot your device into Fastboot/Bootloader mode.
