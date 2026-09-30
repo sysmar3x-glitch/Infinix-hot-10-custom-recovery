@@ -64,12 +64,12 @@ Your compiled recovery will be output to: out/target/product/X682C/recovery.img
  * Connect your device to your PC.
  * Flash the compiled recovery image via fastboot:
    fastboot flash recovery recovery.img
-
  * Reboot directly into recovery to prevent the stock ROM from overwriting OrangeFox:
    fastboot reboot recovery
 
 🐛 Bug Reports & Contributions
 If you encounter bugs, please open an issue in this repository. Pull requests for device tree improvements are always welcome!
+
 🙏 Credits & Acknowledgments
  * TeamWin for TWRP Recovery
  * OrangeFox Recovery Project for the custom recovery UI and features
