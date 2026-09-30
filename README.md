@@ -1,9 +1,5 @@
 ## Automated TWRP/CUSTOM RECOVERY compilation based on Github Action
 
-## Advertising
-
-1. OrangeFox is [here](https://github.com/azwhikaru/Action-OFRP-Builder)
-
 ## Notice
 
 1. Github Actions service is **NOT** unlimited so to avoid waste, don't use unverified source code in this, the best used to automate builds of repositories that are already stabilized
