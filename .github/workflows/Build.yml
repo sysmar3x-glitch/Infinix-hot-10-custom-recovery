@@ -19,6 +19,16 @@ jobs:
           sudo apt-get clean
           df -h
 
+      - name: Allocate Swap Space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       - name: Set up build environment
         run: |
           sudo apt-get update
@@ -49,7 +59,7 @@ jobs:
           export LC_ALL="C"
           lunch twrp_X682C-eng
           set -e
-          mka adbd recoveryimage
+          mka -j2 adbd recoveryimage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
