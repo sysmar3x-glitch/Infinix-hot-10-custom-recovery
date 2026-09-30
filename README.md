@@ -58,7 +58,7 @@ mka recoveryimage
 
 Your compiled recovery will be output to: out/target/product/X682C/recovery.img
 ```
-##⚡ Installation Guide
+## ⚡ Installation Guide
 
  * Unlock your device's bootloader.
  * Reboot your device into Fastboot/Bootloader mode.
@@ -68,11 +68,11 @@ Your compiled recovery will be output to: out/target/product/X682C/recovery.img
  * Reboot directly into recovery to prevent the stock ROM from overwriting OrangeFox:
    fastboot reboot recovery
 
-##🐛 Bug Reports & Contributions
+## 🐛 Bug Reports & Contributions
 
 If you encounter bugs, please open an issue in this repository. Pull requests for device tree improvements are always welcome!
 
-##🙏 Credits & Acknowledgments
+## 🙏 Credits & Acknowledgments
 
  * TeamWin for TWRP Recovery
  * OrangeFox Recovery Project for the custom recovery UI and features
