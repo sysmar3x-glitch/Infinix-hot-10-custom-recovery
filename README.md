@@ -1,6 +1,6 @@
 # OrangeFox Recovery Project for Infinix Hot 10 (X682C)
 
-![OrangeFox Logo]([https://gitlab.com/OrangeFox/misc/theme/-/raw/master/logo.png](https://orangefox.tech/icon.png))
+![OrangeFox Logo](https://gitlab.com/OrangeFox/misc/theme/-/raw/master/logo.png)
 
 This repository contains the device tree and GitHub Actions workflow for building [OrangeFox Recovery](https://orangefox.download/) for the Infinix Hot 10 (X682C). 
 
