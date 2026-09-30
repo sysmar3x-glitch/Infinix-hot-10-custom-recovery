@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Allocate Swap Space
         run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
           sudo fallocate -l 16G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
