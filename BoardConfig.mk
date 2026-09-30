@@ -1,58 +1,57 @@
-name: Build OrangeFox Recovery
+TARGET_ARCH := arm64
+TARGET_ARCH_VARIANT := armv8-a
+TARGET_CPU_ABI := arm64-v8a
+TARGET_CPU_ABI2 :=
+TARGET_CPU_VARIANT := generic
 
-on:
-  workflow_dispatch:
+TARGET_2ND_ARCH := arm
+TARGET_2ND_ARCH_VARIANT := armv8-a
+TARGET_2ND_CPU_ABI := armeabi-v7a
+TARGET_2ND_CPU_ABI2 := armeabi
+TARGET_2ND_CPU_VARIANT := generic
+TARGET_SUPPORTS_64_BIT_APPS := true
 
-jobs:
-  build:
-    name: Compile Recovery
-    runs-on: ubuntu-22.04
-    timeout-minutes: 360
+TARGET_BOARD_PLATFORM := mt6768
+TARGET_NO_BOOTLOADER := true
+TARGET_USERIMAGES_USE_EXT4 := true
 
-    steps:
-      - name: Maximize Build Space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo apt-get clean
-          df -h
+BOARD_KERNEL_CMDLINE := console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O
+BOARD_KERNEL_BASE := 0x40078000
+BOARD_KERNEL_PAGESIZE := 2048
+TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
 
-      - name: Set up build environment
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev libc6-dev-i386 x11proto-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python3 python-is-python3 openjdk-11-jdk rsync bc cpio libssl-dev lzop schedtool
-          sudo curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo
-          sudo chmod a+x /usr/local/bin/repo
-          git config --global user.name "sysmar3x-glitch"
-          git config --global user.email "sysmar3x-glitch@users.noreply.github.com"
+TARGET_SCREEN_WIDTH := 720
+TARGET_SCREEN_HEIGHT := 1640
+TW_THEME := portrait_hdpi
+TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
+TW_MAX_BRIGHTNESS := 255
+TW_DEFAULT_BRIGHTNESS := 200
 
-      - name: Sync OrangeFox Workspace
-        run: |
-          git clone https://gitlab.com/OrangeFox/sync.git
-          cd sync
-          yes | ./orangefox_sync.sh --branch 12.1 --path ${{ github.workspace }}/workspace
+BOARD_BUILD_SYSTEM_ROOT_IMAGE := true
+BOARD_HAS_LARGE_FILESYSTEM := true
+BOARD_BOOTIMAGE_PARTITION_SIZE := 33554432
+BOARD_RECOVERYIMAGE_PARTITION_SIZE := 33554432
 
-      - name: Checkout Device Tree
-        uses: actions/checkout@v4
-        with:
-          path: workspace/device/infinix/X682C
+# AVB / Verified Boot (Corrected Path & Consolidated)
+BOARD_AVB_ENABLE := true
+BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS += --flags 2
+BOARD_AVB_RECOVERY_KEY_PATH := build/make/target/product/security/testkey.pem
+BOARD_AVB_RECOVERY_ALGORITHM := SHA256_RSA4096
+BOARD_AVB_RECOVERY_ROLLBACK_INDEX := 1
+BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION := 1
 
-      - name: Build Recovery
-        run: |
-          cd workspace
-          set +e
-          source build/envsetup.sh
-          export ALLOW_MISSING_DEPENDENCIES=true
-          export FOX_BUILD_DEVICE=X682C
-          export LC_ALL="C"
-          lunch twrp_X682C-eng
-          set -e
-          mka adbd recoveryimage
+OFOX_AB_DEVICE := false
+OFOX_BANNED_USB_PATH := /sys/devices/platform/mt_usb
+OFOX_FLASHLIGHT_ENABLE := true
+OFOX_FLASHLIGHT_PATH := /sys/class/leds/flashlight
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OrangeFox-X682C-Recovery
-          path: workspace/out/target/product/X682C/recovery.img
+TARGET_USERIMAGES_USE_F2FS := true
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_CRYPTO_FBE := true
+TW_INCLUDE_FBE_METADATA_DECRYPT := true
+BOARD_USES_METADATA_PARTITION := true
+
+BOARD_SUPER_PARTITION_SIZE := 4831838208
+BOARD_SUPER_PARTITION_GROUPS := mediatek_dynamic_partitions
+BOARD_MEDIATEK_DYNAMIC_PARTITIONS_PARTITION_LIST := system vendor product
+BOARD_MEDIATEK_DYNAMIC_PARTITIONS_SIZE := 4827643904
