@@ -23,8 +23,8 @@ jobs:
         run: |
           sudo swapoff -a
           sudo rm -f /swapfile
-          # Using 'dd' instead of 'fallocate' to prevent kernel I/O deadlocks
-          sudo dd if=/dev/zero of=/swapfile bs=1M count=16384 status=progress
+          # Reduced to 8GB to leave plenty of breathing room on the SSD
+          sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 status=progress
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -58,12 +58,10 @@ jobs:
           export ALLOW_MISSING_DEPENDENCIES=true
           export FOX_BUILD_DEVICE=X682C
           export LC_ALL="C"
-          export SOONG_GEN_NINJA_ARGS="-j2"
-          export NINJA_ARGS="-j2"
-          export _JAVA_OPTIONS="-Xmx4g"
           lunch twrp_X682C-eng
           set -e
-          make -j2 adbd recoveryimage
+          # Building ONLY recoveryimage to prevent framework dependency bloat
+          mka recoveryimage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
