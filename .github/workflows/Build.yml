@@ -17,6 +17,7 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           sudo apt-get clean
+          sudo systemctl disable --now systemd-oomd || true
           df -h
 
       - name: Set up build environment
@@ -52,14 +53,15 @@ jobs:
         run: |
           cd workspace
           
-          # Route ccache directly to the out/ folder to bypass the Android sandbox read-only limits
+          # Force ccache to use the 'out' directory to bypass Android's read-only sandbox
           export CCACHE_DIR=$(pwd)/out/ccache
           export CCACHE_EXEC=/usr/bin/ccache
           export USE_CCACHE=1
           mkdir -p $CCACHE_DIR
           ccache -M 10G
-          ccache -o compression=true
           
+          # Disable strict exit to allow envsetup.sh to output natural warnings
+          set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           export FOX_BUILD_DEVICE=X682C
@@ -67,6 +69,9 @@ jobs:
           export _JAVA_OPTIONS="-Xmx4g"
           
           lunch twrp_X682C-eng
+          
+          # Re-enable strict error checking for the actual compilation
+          set -e
           mka recoveryimage
 
       - name: Upload Artifact
