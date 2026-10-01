@@ -62,7 +62,6 @@ jobs:
           # Patch relink.sh to prevent strict exit code 1 crashes
           sed -i 's/set -e/set +e/g' bootable/recovery/prebuilt/relink.sh || true
           sed -i 's/exit 1/exit 0/g' bootable/recovery/prebuilt/relink.sh || true
-          mkdir -p out/target/product/X682C/recovery/root/vendor/bin/hw
           
           set +e
           source build/envsetup.sh
@@ -73,7 +72,7 @@ jobs:
           lunch twrp_X682C-eng
           
           set -e
-          # Pipe the output to build.log to capture the exact failure
+          # Pipe the output to build.log to capture any future failures
           mka adbd recoveryimage 2>&1 | tee build.log
 
       - name: Upload Build Log
