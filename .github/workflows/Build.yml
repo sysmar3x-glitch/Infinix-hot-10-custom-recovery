@@ -30,7 +30,7 @@ jobs:
       - name: Prepare Build Environment
         run: |
           sudo apt update && sudo apt upgrade -y
-          DEBIAN_FRONTEND=noninteractive sudo apt install -yq git python3 tar aria2 curl
+          DEBIAN_FRONTEND=noninteractive sudo apt install -yq git python3 tar aria2 openssl
           
           git clone https://gitlab.com/OrangeFox/misc/scripts ofox_scripts
           cd ofox_scripts
@@ -63,10 +63,18 @@ jobs:
           sed -i 's/set -e/set +e/g' bootable/recovery/prebuilt/relink.sh || true
           sed -i 's/exit 1/exit 0/g' bootable/recovery/prebuilt/relink.sh || true
           
-          # 2. Download missing AOSP test keys for AVB signing
+          # 2. Generate a valid RSA 4096 key to prevent the AVB signing crash
           mkdir -p build/make/target/product/security
-          curl -sL https://raw.githubusercontent.com/aosp-mirror/platform_build/master/target/product/security/testkey.pem -o build/make/target/product/security/testkey.pem
-          curl -sL https://raw.githubusercontent.com/aosp-mirror/platform_build/master/target/product/security/testkey.x509.pem -o build/make/target/product/security/testkey.x509.pem
+          openssl genrsa -out build/make/target/product/security/testkey.pem 4096
+          
+          # 3. Create an rsync wrapper to globally ignore the vendor symlink crash
+          mkdir -p $GITHUB_WORKSPACE/bin
+          cat << 'EOF' > $GITHUB_WORKSPACE/bin/rsync
+          #!/bin/bash
+          exec /usr/bin/rsync "$@" --exclude=vendor --exclude=vendor/*
+          EOF
+          chmod +x $GITHUB_WORKSPACE/bin/rsync
+          export PATH="$GITHUB_WORKSPACE/bin:$PATH"
           
           set +e
           source build/envsetup.sh
