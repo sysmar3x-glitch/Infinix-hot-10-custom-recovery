@@ -30,7 +30,7 @@ jobs:
       - name: Prepare Build Environment
         run: |
           sudo apt update && sudo apt upgrade -y
-          DEBIAN_FRONTEND=noninteractive sudo apt install -yq git python3 tar aria2
+          DEBIAN_FRONTEND=noninteractive sudo apt install -yq git python3 tar aria2 curl
           
           git clone https://gitlab.com/OrangeFox/misc/scripts ofox_scripts
           cd ofox_scripts
@@ -63,8 +63,10 @@ jobs:
           sed -i 's/set -e/set +e/g' bootable/recovery/prebuilt/relink.sh || true
           sed -i 's/exit 1/exit 0/g' bootable/recovery/prebuilt/relink.sh || true
           
-          # 2. Patch the Android Makefile to prevent the rsync symlink crash
-          sed -i 's/--exclude=cache/--exclude=cache --exclude=vendor/g' build/make/core/Makefile
+          # 2. Download missing AOSP test keys for AVB signing
+          mkdir -p build/make/target/product/security
+          curl -sL https://raw.githubusercontent.com/aosp-mirror/platform_build/master/target/product/security/testkey.pem -o build/make/target/product/security/testkey.pem
+          curl -sL https://raw.githubusercontent.com/aosp-mirror/platform_build/master/target/product/security/testkey.x509.pem -o build/make/target/product/security/testkey.x509.pem
           
           set +e
           source build/envsetup.sh
