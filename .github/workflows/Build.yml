@@ -59,9 +59,9 @@ jobs:
         run: |
           cd workspace
           
-          # Patch relink.sh to prevent strict exit code 1 crashes
-          sed -i 's/set -e/set +e/g' bootable/recovery/prebuilt/relink.sh || true
-          sed -i 's/exit 1/exit 0/g' bootable/recovery/prebuilt/relink.sh || true
+          # Completely neutralize relink.sh to prevent the vendor symlink crash
+          echo -e "#!/bin/bash\nexit 0" > bootable/recovery/prebuilt/relink.sh
+          chmod +x bootable/recovery/prebuilt/relink.sh
           
           set +e
           source build/envsetup.sh
@@ -71,12 +71,12 @@ jobs:
           
           lunch twrp_X682C-eng
           
-          set -e
-          # Pipe the output to build.log to capture any future failures
+          # Enforce pipefail so background mka crashes trigger a GitHub failure
+          set -e -o pipefail
           mka adbd recoveryimage 2>&1 | tee build.log
 
       - name: Upload Build Log
-        if: always() # Forces the log to upload even if the mka step fails
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Build-Log
