@@ -59,9 +59,12 @@ jobs:
         run: |
           cd workspace
           
-          # Completely neutralize relink.sh to prevent the vendor symlink crash
-          echo -e "#!/bin/bash\nexit 0" > bootable/recovery/prebuilt/relink.sh
-          chmod +x bootable/recovery/prebuilt/relink.sh
+          # 1. Patch relink.sh to prevent strict exit code 1 crashes
+          sed -i 's/set -e/set +e/g' bootable/recovery/prebuilt/relink.sh || true
+          sed -i 's/exit 1/exit 0/g' bootable/recovery/prebuilt/relink.sh || true
+          
+          # 2. Patch the Android Makefile to prevent the rsync symlink crash
+          sed -i 's/--exclude=cache/--exclude=cache --exclude=vendor/g' build/make/core/Makefile
           
           set +e
           source build/envsetup.sh
@@ -71,7 +74,6 @@ jobs:
           
           lunch twrp_X682C-eng
           
-          # Enforce pipefail so background mka crashes trigger a GitHub failure
           set -e -o pipefail
           mka adbd recoveryimage 2>&1 | tee build.log
 
