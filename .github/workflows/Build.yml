@@ -17,7 +17,6 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           sudo apt-get clean
-          sudo systemctl disable --now systemd-oomd || true
           df -h
 
       - name: Set up build environment
@@ -32,7 +31,7 @@ jobs:
       - name: Setup ccache
         uses: actions/cache@v4
         with:
-          path: workspace/out/ccache
+          path: ~/.cache/ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-ccache-
@@ -53,24 +52,27 @@ jobs:
         run: |
           cd workspace
           
-          # Force ccache to use the 'out' directory to bypass Android's read-only sandbox
-          export CCACHE_DIR=$(pwd)/out/ccache
-          export CCACHE_EXEC=/usr/bin/ccache
-          export USE_CCACHE=1
-          mkdir -p $CCACHE_DIR
-          ccache -M 10G
+          # The Symlink Trick: Trick Soong into writing to the safe 'out' folder
+          mkdir -p out/ccache
+          mkdir -p ~/.cache
+          ln -s $(pwd)/out/ccache ~/.cache/ccache
           
-          # Disable strict exit to allow envsetup.sh to output natural warnings
+          export USE_CCACHE=1
+          export CCACHE_EXEC=/usr/bin/ccache
+          ccache -M 10G
+          ccache -o compression=true
+          
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           export FOX_BUILD_DEVICE=X682C
           export LC_ALL="C"
+          export SOONG_GEN_NINJA_ARGS="-j4"
+          export NINJA_ARGS="-j4"
           export _JAVA_OPTIONS="-Xmx4g"
           
           lunch twrp_X682C-eng
           
-          # Re-enable strict error checking for the actual compilation
           set -e
           mka recoveryimage
 
