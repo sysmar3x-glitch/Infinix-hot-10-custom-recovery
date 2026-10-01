@@ -25,11 +25,14 @@ jobs:
         run: |
           sudo apt update && sudo apt upgrade -y
           DEBIAN_FRONTEND=noninteractive sudo apt install -yq git python3 tar aria2
+          
+          # This will now safely clone OrangeFox's official scripts without hitting your old files
           git clone https://gitlab.com/OrangeFox/misc/scripts
           cd scripts
           sudo bash setup/android_build_env.sh
           sed -i 's/cd -/cd ../g' setup/install_android_sdk.sh
           sudo bash setup/install_android_sdk.sh
+          
           git config --global user.name "sysmar3x-glitch"
           git config --global user.email "sysmar3x-glitch@users.noreply.github.com"
 
@@ -66,7 +69,6 @@ jobs:
           lunch twrp_X682C-eng
           
           set -e
-          # We use mka adbd recoveryimage as per the reference, with NO ccache
           mka adbd recoveryimage
 
       - name: Upload Artifact
