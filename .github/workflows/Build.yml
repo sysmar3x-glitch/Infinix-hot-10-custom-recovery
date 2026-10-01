@@ -10,13 +10,21 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: Maximize Build Space
+      - name: Maximize Build Space & Add Swap
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           sudo apt-get clean
+          
+          # Create a fast 8GB Swap file to prevent Out-Of-Memory crashes
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          # Tell Linux to only swap when absolutely necessary to avoid disk lockups
+          sudo sysctl vm.swappiness=10
           df -h
 
       - name: Set up build environment
@@ -52,7 +60,7 @@ jobs:
         run: |
           cd workspace
           
-          # The Symlink Trick: Trick Soong into writing to the safe 'out' folder
+          # Symlink trick to bypass Android's read-only cache limits
           mkdir -p out/ccache
           mkdir -p ~/.cache
           ln -s $(pwd)/out/ccache ~/.cache/ccache
@@ -67,14 +75,16 @@ jobs:
           export ALLOW_MISSING_DEPENDENCIES=true
           export FOX_BUILD_DEVICE=X682C
           export LC_ALL="C"
-          export SOONG_GEN_NINJA_ARGS="-j4"
-          export NINJA_ARGS="-j4"
-          export _JAVA_OPTIONS="-Xmx4g"
+          
+          # Strict memory limit for Java background processes
+          export _JAVA_OPTIONS="-Xmx2g"
           
           lunch twrp_X682C-eng
           
           set -e
-          mka recoveryimage
+          # DO NOT use 'mka' as it ignores -j flags in some environments.
+          # We force -j2 to prevent the compiler from overwhelming the 16GB RAM.
+          make -j2 recoveryimage
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
