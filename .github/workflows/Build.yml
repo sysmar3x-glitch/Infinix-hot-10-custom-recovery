@@ -6,8 +6,7 @@ on:
 jobs:
   build:
     name: Compile Recovery
-    # Switch to 20.04. Android 12.1 frequently crashes on 22.04 due to glibc/ncurses changes.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 360
 
     steps:
@@ -19,17 +18,18 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           sudo apt-get clean
           
-          # Create an additional 16GB swap file
+          # Create an additional 16GB swap file without touching the default busy swap
           sudo fallocate -l 16G /swapfile_extra
           sudo chmod 600 /swapfile_extra
           sudo mkswap /swapfile_extra
           sudo swapon /swapfile_extra
           df -h
+          free -h
 
       - name: Set up build environment
         run: |
           sudo apt-get update
-          # Added libncurses5 and libncurses5-dev which are critical for Android 12.1 builds
+          # Including libncurses5 and libncurses5-dev for Android 12.1 compatibility on Ubuntu 22.04
           sudo apt-get install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev libc6-dev-i386 x11proto-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python3 python-is-python3 openjdk-11-jdk rsync bc cpio libssl-dev lzop schedtool ccache libncurses5 libncurses5-dev
           sudo curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo
           sudo chmod a+x /usr/local/bin/repo
@@ -75,6 +75,8 @@ jobs:
           export FOX_BUILD_DEVICE=X682C
           export LC_ALL="C"
           export _JAVA_OPTIONS="-Xmx2g"
+          
+          # Explicitly force Ninja to 2 threads
           export SOONG_GEN_NINJA_ARGS="-j2"
           export NINJA_ARGS="-j2"
           
