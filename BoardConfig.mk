@@ -22,8 +22,8 @@ BOARD_KERNEL_PAGESIZE := 2048
 TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
 
 # --- MEDIATEK BOOTLOADER FIXES ---
-# Forces the required Header Version 2 and LZ4 compression for Helio G70 Android 11/12
-BOARD_BOOT_HEADER_VERSION := 2
+# Header v1 supports glued Image.gz-dtb kernels while satisfying MTK requirements
+BOARD_BOOT_HEADER_VERSION := 1
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
 BOARD_RAMDISK_USE_LZ4 := true
 # ---------------------------------
@@ -40,7 +40,7 @@ BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_BOOTIMAGE_PARTITION_SIZE := 33554432
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 33554432
 
-# AVB / Verified Boot (Corrected Path & Consolidated)
+# AVB / Verified Boot
 BOARD_AVB_ENABLE := true
 BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS += --flags 2
 BOARD_AVB_RECOVERY_KEY_PATH := build/make/target/product/security/testkey.pem
