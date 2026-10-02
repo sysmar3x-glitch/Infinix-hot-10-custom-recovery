@@ -52,6 +52,12 @@ TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
 TW_MAX_BRIGHTNESS := 255
 TW_DEFAULT_BRIGHTNESS := 200
 
+# --- GRAPHICS & UI FIXES (Fixes Splash Screen Hang) ---
+TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
+TW_GRALLOC_BUILD_INLINE := true
+OFOX_DISABLE_BOOTANIMATION := true
+# ------------------------------------------------------
+
 BOARD_BUILD_SYSTEM_ROOT_IMAGE := true
 BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_BOOTIMAGE_PARTITION_SIZE := 33554432
