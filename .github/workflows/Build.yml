@@ -76,6 +76,19 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/bin/rsync
           export PATH="$GITHUB_WORKSPACE/bin:$PATH"
 
+          # 4. Force ADB Daemon to start in the Ramdisk
+          mkdir -p device/infinix/X682C/recovery/root
+          cat << 'EOF' > device/infinix/X682C/recovery/root/default.prop
+          ro.debuggable=1
+          ro.adb.secure=0
+          sys.usb.config=adb
+          EOF
+          cat << 'EOF' > device/infinix/X682C/recovery/root/prop.default
+          ro.debuggable=1
+          ro.adb.secure=0
+          sys.usb.config=adb
+          EOF
+
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
