@@ -76,21 +76,6 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/bin/rsync
           export PATH="$GITHUB_WORKSPACE/bin:$PATH"
 
-          # 4. Safely extract the DTB starting from the END of the file (rfind)
-          cat << 'EOF' > extract_dtb.py
-          with open('device/infinix/X682C/prebuilt/Image.gz-dtb', 'rb') as f:
-              data = f.read()
-          magic = b'\xd0\x0d\xfe\xed'
-          idx = data.rfind(magic)
-          if idx != -1:
-              with open('device/infinix/X682C/prebuilt/dtb.img', 'wb') as f:
-                  f.write(data[idx:])
-          else:
-              with open('device/infinix/X682C/prebuilt/dtb.img', 'wb') as f:
-                  f.write(b'\x00' * 1024)
-          EOF
-          python3 extract_dtb.py
-          
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
