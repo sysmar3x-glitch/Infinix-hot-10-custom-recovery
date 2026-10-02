@@ -15,32 +15,34 @@ TARGET_BOARD_PLATFORM := mt6768
 TARGET_NO_BOOTLOADER := true
 TARGET_USERIMAGES_USE_EXT4 := true
 
-# Kernel Configuration
-BOARD_KERNEL_CMDLINE := console=tty0 console=ttyMT3,921600n1 root=/dev/ram vmalloc=496M slub_max_order=0 slub_debug=O
+# --- EXACT MEDIA TEK MEMORY OFFSETS FROM AIK ---
+BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 buildvariant=user
 BOARD_KERNEL_BASE := 0x40078000
 BOARD_KERNEL_PAGESIZE := 2048
-
-# --- MEDIATEK MEMORY OFFSETS (CRITICAL FOR BOOT) ---
 BOARD_KERNEL_OFFSET := 0x00008000
-BOARD_RAMDISK_OFFSET := 0x11a88000
-BOARD_TAGS_OFFSET := 0x07c08000
-BOARD_DTB_OFFSET := 0x07c08000
+BOARD_RAMDISK_OFFSET := 0x07c08000
+BOARD_SECOND_OFFSET := 0x00e88000
+BOARD_TAGS_OFFSET := 0x0bc08000
+BOARD_DTB_OFFSET := 0x0bc08000
 
+BOARD_MKBOOTIMG_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --second_offset $(BOARD_SECOND_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_TAGS_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --dtb_offset $(BOARD_DTB_OFFSET)
-# ---------------------------------------------------
+# -----------------------------------------------
 
 TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
 
 # --- MEDIATEK BOOTLOADER FIXES ---
-# Enforce Header Version 2 (Required by Helio G70)
 BOARD_BOOT_HEADER_VERSION := 2
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
 
-# Point to the dynamically extracted DTB
 TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
 BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
+
+BOARD_MKBOOTIMG_ARGS += --os_version 10.0.0
+BOARD_MKBOOTIMG_ARGS += --os_patch_level 2022-07
 # ---------------------------------
 
 TARGET_SCREEN_WIDTH := 720
