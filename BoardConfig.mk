@@ -22,10 +22,9 @@ BOARD_KERNEL_PAGESIZE := 2048
 TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
 
 # --- MEDIATEK BOOTLOADER FIXES ---
-# Header v1 supports glued Image.gz-dtb kernels while satisfying MTK requirements
+# Header v1 supports glued Image.gz-dtb kernels
 BOARD_BOOT_HEADER_VERSION := 1
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
-BOARD_RAMDISK_USE_LZ4 := true
 # ---------------------------------
 
 TARGET_SCREEN_WIDTH := 720
