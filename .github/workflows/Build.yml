@@ -75,6 +75,21 @@ jobs:
           EOF
           chmod +x $GITHUB_WORKSPACE/bin/rsync
           export PATH="$GITHUB_WORKSPACE/bin:$PATH"
+
+          # 4. Dynamically extract the DTB to satisfy Header V2 requirements
+          cat << 'EOF' > extract_dtb.py
+          with open('device/infinix/X682C/prebuilt/Image.gz-dtb', 'rb') as f:
+              data = f.read()
+          magic = b'\xd0\x0d\xfe\xed'
+          idx = data.find(magic)
+          if idx != -1:
+              with open('device/infinix/X682C/prebuilt/dtb.img', 'wb') as f:
+                  f.write(data[idx:])
+          else:
+              with open('device/infinix/X682C/prebuilt/dtb.img', 'wb') as f:
+                  f.write(b'\x00' * 1024)
+          EOF
+          python3 extract_dtb.py
           
           set +e
           source build/envsetup.sh
