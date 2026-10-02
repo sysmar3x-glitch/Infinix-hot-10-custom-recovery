@@ -22,9 +22,13 @@ BOARD_KERNEL_PAGESIZE := 2048
 TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
 
 # --- MEDIATEK BOOTLOADER FIXES ---
-# Header v1 supports glued Image.gz-dtb kernels
-BOARD_BOOT_HEADER_VERSION := 1
+# Enforce Header Version 2 (Required by Helio G70)
+BOARD_BOOT_HEADER_VERSION := 2
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
+
+# Point to the dynamically extracted DTB
+TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
+BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 # ---------------------------------
 
 TARGET_SCREEN_WIDTH := 720
