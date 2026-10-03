@@ -50,7 +50,6 @@ TW_DEFAULT_BRIGHTNESS := 200
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TW_GRALLOC_BUILD_INLINE := true
 TW_CUSTOM_BATTERY_PATH := "/sys/class/power_supply/battery"
-# (Removed OFOX_DISABLE_BOOTANIMATION to restore the startup animation)
 # ---------------------------
 
 BOARD_BUILD_SYSTEM_ROOT_IMAGE := true
@@ -70,10 +69,13 @@ OFOX_BANNED_USB_PATH := /sys/devices/platform/mt_usb
 OFOX_FLASHLIGHT_ENABLE := true
 OFOX_FLASHLIGHT_PATH := /sys/class/leds/flashlight
 
-# --- DISABLE CRYPTO TO FIX LOGO FREEZE ---
-TW_INCLUDE_CRYPTO := false
-TW_EXCLUDE_ENCRYPTED_BACKUPS := false
-OFOX_SKIP_DECRYPTED_DATA := false
+# --- ENABLE NATIVE CRYPTO & LOGGING ---
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_CRYPTO_FBE := true
+TW_INCLUDE_FBE_METADATA_DECRYPT := true
+BOARD_USES_METADATA_PARTITION := true
+TW_INCLUDE_RESETPROP := true
+BOARD_USES_MTK_HARDWARE := true
 # -----------------------------------------
 
 BOARD_SUPER_PARTITION_SIZE := 4831838208
