@@ -76,16 +76,17 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/bin/rsync
           export PATH="$GITHUB_WORKSPACE/bin:$PATH"
 
-          # 4. Inject Touch Firmware from vendor.zip
+          # 4. Define Root Destination
+          DEST_ROOT="$GITHUB_WORKSPACE/workspace/device/infinix/X682C/recovery/root"
+          mkdir -p "$DEST_ROOT"
+
+          # 5. Inject Touch Firmware from vendor.zip
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
             echo "Found vendor.zip at: $VENDOR_ZIP"
             mkdir -p /tmp/vendor_extract
             unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
-            
-            DEST_ROOT="$GITHUB_WORKSPACE/workspace/device/infinix/X682C/recovery/root"
-            mkdir -p "$DEST_ROOT"
             
             # Extract contents directly into the recovery root
             cp -rf /tmp/vendor_extract/* "$DEST_ROOT/"
@@ -94,6 +95,11 @@ jobs:
             echo "Notice: vendor.zip not found. Proceeding without injection."
           fi
 
+          # 6. FORCE ADB AND OVERRIDE DEFAULT.PROP
+          echo "ro.debuggable=1" >> "$DEST_ROOT/default.prop"
+          echo "ro.adb.secure=0" >> "$DEST_ROOT/default.prop"
+          echo "sys.usb.config=adb" >> "$DEST_ROOT/default.prop"
+          
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
