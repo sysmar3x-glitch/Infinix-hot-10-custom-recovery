@@ -16,7 +16,6 @@ TARGET_NO_BOOTLOADER := true
 TARGET_USERIMAGES_USE_EXT4 := true
 
 # --- EXACT MEDIA TEK MEMORY OFFSETS FROM AIK ---
-# Added permissive SELinux to prevent security blocks on ADB
 BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 buildvariant=user androidboot.selinux=permissive
 BOARD_KERNEL_BASE := 0x40078000
 BOARD_KERNEL_PAGESIZE := 2048
@@ -77,22 +76,13 @@ OFOX_BANNED_USB_PATH := /sys/devices/platform/mt_usb
 OFOX_FLASHLIGHT_ENABLE := true
 OFOX_FLASHLIGHT_PATH := /sys/class/leds/flashlight
 
-# --- DISABLE CRYPTO TO BYPASS SPLASH SCREEN HANG ---
-TW_INCLUDE_CRYPTO := false
-# TW_INCLUDE_CRYPTO_FBE := true
-# TW_INCLUDE_FBE_METADATA_DECRYPT := true
-# ---------------------------------------------------
-
-# --- FORCE ADB & BYPASS MOUNT HANGS ---
-TW_NO_USB_STORAGE := false
-TW_INCLUDE_RESETPROP := true
-OFOX_SECURITY_SKIP_PASSWORDS := true
-OFOX_SKIP_DECRYPTED_DATA := true
-TW_NO_BIND_SYSTEM := true
-OF_NO_TREBLE_COMPATIBILITY_CHECK := true
-# --------------------------------------
-
+# --- ENABLE CRYPTO FOR DECRYPTION ---
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_CRYPTO_FBE := true
+TW_INCLUDE_FBE_METADATA_DECRYPT := true
 BOARD_USES_METADATA_PARTITION := true
+# ------------------------------------
+
 BOARD_SUPER_PARTITION_SIZE := 4831838208
 BOARD_SUPER_PARTITION_GROUPS := mediatek_dynamic_partitions
 BOARD_MEDIATEK_DYNAMIC_PARTITIONS_PARTITION_LIST := system vendor product
