@@ -15,7 +15,7 @@ TARGET_BOARD_PLATFORM := mt6768
 TARGET_NO_BOOTLOADER := true
 TARGET_USERIMAGES_USE_EXT4 := true
 
-# --- EXACT MEDIA TEK MEMORY OFFSETS FROM AIK ---
+# --- EXACT MEDIA TEK MEMORY OFFSETS ---
 BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 buildvariant=user androidboot.selinux=permissive
 BOARD_KERNEL_BASE := 0x40078000
 BOARD_KERNEL_PAGESIZE := 2048
@@ -41,6 +41,7 @@ BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
 TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
 BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 
+# CRITICAL: These must match your CURRENT Android system exactly for decryption to work
 BOARD_MKBOOTIMG_ARGS += --os_version 10.0.0
 BOARD_MKBOOTIMG_ARGS += --os_patch_level 2022-07
 # ---------------------------------
@@ -76,12 +77,12 @@ OFOX_BANNED_USB_PATH := /sys/devices/platform/mt_usb
 OFOX_FLASHLIGHT_ENABLE := true
 OFOX_FLASHLIGHT_PATH := /sys/class/leds/flashlight
 
-# --- ENABLE CRYPTO FOR DECRYPTION ---
+# --- NATIVE DECRYPTION FLAGS (FBE & Metadata) ---
 TW_INCLUDE_CRYPTO := true
 TW_INCLUDE_CRYPTO_FBE := true
 TW_INCLUDE_FBE_METADATA_DECRYPT := true
 BOARD_USES_METADATA_PARTITION := true
-# ------------------------------------
+# ------------------------------------------------
 
 BOARD_SUPER_PARTITION_SIZE := 4831838208
 BOARD_SUPER_PARTITION_GROUPS := mediatek_dynamic_partitions
