@@ -15,7 +15,6 @@ TARGET_BOARD_PLATFORM := mt6768
 TARGET_NO_BOOTLOADER := true
 TARGET_USERIMAGES_USE_EXT4 := true
 
-# --- EXACT MEDIA TEK MEMORY OFFSETS ---
 BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 buildvariant=user androidboot.selinux=permissive
 BOARD_KERNEL_BASE := 0x40078000
 BOARD_KERNEL_PAGESIZE := 2048
@@ -30,21 +29,15 @@ BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --second_offset $(BOARD_SECOND_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_TAGS_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --dtb_offset $(BOARD_DTB_OFFSET)
-# -----------------------------------------------
 
 TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
-
-# --- MEDIATEK BOOTLOADER FIXES ---
 BOARD_BOOT_HEADER_VERSION := 2
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
 
 TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
 BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
-
-# CRITICAL: These must match your CURRENT Android system exactly for decryption to work
 BOARD_MKBOOTIMG_ARGS += --os_version 10.0.0
 BOARD_MKBOOTIMG_ARGS += --os_patch_level 2022-07
-# ---------------------------------
 
 TARGET_SCREEN_WIDTH := 720
 TARGET_SCREEN_HEIGHT := 1640
@@ -53,18 +46,18 @@ TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
 TW_MAX_BRIGHTNESS := 255
 TW_DEFAULT_BRIGHTNESS := 200
 
-# --- GRAPHICS & UI FIXES ---
+# --- UI & HARDWARE FIXES ---
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TW_GRALLOC_BUILD_INLINE := true
-OFOX_DISABLE_BOOTANIMATION := true
-# ------------------------------------------------------
+TW_CUSTOM_BATTERY_PATH := "/sys/class/power_supply/battery"
+# (Removed OFOX_DISABLE_BOOTANIMATION to restore the startup animation)
+# ---------------------------
 
 BOARD_BUILD_SYSTEM_ROOT_IMAGE := true
 BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_BOOTIMAGE_PARTITION_SIZE := 33554432
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 33554432
 
-# AVB / Verified Boot
 BOARD_AVB_ENABLE := true
 BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS += --flags 2
 BOARD_AVB_RECOVERY_KEY_PATH := build/make/target/product/security/testkey.pem
@@ -77,12 +70,11 @@ OFOX_BANNED_USB_PATH := /sys/devices/platform/mt_usb
 OFOX_FLASHLIGHT_ENABLE := true
 OFOX_FLASHLIGHT_PATH := /sys/class/leds/flashlight
 
-# --- NATIVE DECRYPTION FLAGS (FBE & Metadata) ---
-TW_INCLUDE_CRYPTO := true
-TW_INCLUDE_CRYPTO_FBE := true
-TW_INCLUDE_FBE_METADATA_DECRYPT := true
-BOARD_USES_METADATA_PARTITION := true
-# ------------------------------------------------
+# --- DISABLE CRYPTO TO FIX LOGO FREEZE ---
+TW_INCLUDE_CRYPTO := false
+TW_EXCLUDE_ENCRYPTED_BACKUPS := true
+OFOX_SKIP_DECRYPTED_DATA := true
+# -----------------------------------------
 
 BOARD_SUPER_PARTITION_SIZE := 4831838208
 BOARD_SUPER_PARTITION_GROUPS := mediatek_dynamic_partitions
