@@ -95,10 +95,10 @@ jobs:
             echo "Notice: vendor.zip not found. Proceeding without injection."
           fi
 
-          # 6. FORCE ADB AND OVERRIDE DEFAULT.PROP
-          echo "ro.debuggable=1" >> "$DEST_ROOT/default.prop"
-          echo "ro.adb.secure=0" >> "$DEST_ROOT/default.prop"
-          echo "sys.usb.config=adb" >> "$DEST_ROOT/default.prop"
+          # 6. FORCE ADB AND OVERRIDE PROP.DEFAULT
+          echo "ro.debuggable=1" >> "$DEST_ROOT/prop.default"
+          echo "ro.adb.secure=0" >> "$DEST_ROOT/prop.default"
+          echo "sys.usb.config=mtp,adb" >> "$DEST_ROOT/prop.default"
           
           set +e
           source build/envsetup.sh
