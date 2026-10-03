@@ -76,53 +76,22 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/bin/rsync
           export PATH="$GITHUB_WORKSPACE/bin:$PATH"
 
-          # 4. Automatically find, extract, and inject ramdisk.zip
-          echo "Scanning for ramdisk.zip..."
-          RAMDISK_ZIP=$(find "$GITHUB_WORKSPACE" -name "ramdisk.zip" | head -n 1)
-          if [ -n "$RAMDISK_ZIP" ]; then
-            echo "Found ramdisk archive at: $RAMDISK_ZIP"
-            mkdir -p /tmp/twrp_extract
-            unzip -qo "$RAMDISK_ZIP" -d /tmp/twrp_extract
+          # 4. Inject Touch Firmware from vendor.zip
+          echo "Scanning for vendor.zip..."
+          VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
+          if [ -n "$VENDOR_ZIP" ]; then
+            echo "Found vendor.zip at: $VENDOR_ZIP"
+            mkdir -p /tmp/vendor_extract
+            unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
             
-            # Determine directory structure inside zip
-            if [ -d "/tmp/twrp_extract/ramdisk" ]; then
-              SRC_RD="/tmp/twrp_extract/ramdisk"
-            else
-              SRC_RD="/tmp/twrp_extract"
-            fi
-            
-            DEST_ROOT="device/infinix/X682C/recovery/root"
+            DEST_ROOT="$GITHUB_WORKSPACE/workspace/device/infinix/X682C/recovery/root"
             mkdir -p "$DEST_ROOT"
             
-            # Inject System Blobs (Decryption libraries and binaries)
-            if [ -d "$SRC_RD/system" ]; then
-              echo "Injecting system libraries..."
-              cp -rf "$SRC_RD/system" "$DEST_ROOT/"
-            fi
-            
-            # Inject Vendor Firmware (Touch screen firmware & configs)
-            if [ -d "$SRC_RD/vendor" ]; then
-              echo "Injecting vendor firmware..."
-              mkdir -p "$DEST_ROOT/vendor"
-              cp -rf "$SRC_RD/vendor/"* "$DEST_ROOT/vendor/" 2>/dev/null || true
-              
-              mkdir -p "$DEST_ROOT/system/vendor"
-              cp -rf "$SRC_RD/vendor/"* "$DEST_ROOT/system/vendor/" 2>/dev/null || true
-              
-              if [ -d "$SRC_RD/vendor/firmware" ]; then
-                mkdir -p "$DEST_ROOT/etc/firmware"
-                cp -rf "$SRC_RD/vendor/firmware/"* "$DEST_ROOT/etc/firmware/" 2>/dev/null || true
-              fi
-            fi
-            
-            # Inject init service scripts and configs
-            cp -f "$SRC_RD"/*.rc "$DEST_ROOT/" 2>/dev/null || true
-            [ -f "$SRC_RD/ueventd.rc" ] && cp -f "$SRC_RD/ueventd.rc" "$DEST_ROOT/" || true
-            [ -f "$SRC_RD/prop.default" ] && cp -f "$SRC_RD/prop.default" "$DEST_ROOT/" || true
-            
-            echo "Ramdisk injection complete!"
+            # Extract contents directly into the recovery root
+            cp -rf /tmp/vendor_extract/* "$DEST_ROOT/"
+            echo "Firmware injected successfully!"
           else
-            echo "WARNING: ramdisk.zip not found! Ensure it is committed to your repository."
+            echo "Notice: vendor.zip not found. Proceeding without injection."
           fi
 
           set +e
