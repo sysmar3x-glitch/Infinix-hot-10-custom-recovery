@@ -50,6 +50,7 @@ TW_DEFAULT_BRIGHTNESS := 200
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TW_GRALLOC_BUILD_INLINE := true
 TW_CUSTOM_BATTERY_PATH := "/sys/class/power_supply/battery"
+TARGET_RECOVERY_DEFAULT_TIME_ZONE := "Asia/Calcutta"
 # ---------------------------
 
 BOARD_BUILD_SYSTEM_ROOT_IMAGE := true
@@ -67,7 +68,7 @@ BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION := 1
 OFOX_AB_DEVICE := false
 OFOX_BANNED_USB_PATH := /sys/devices/platform/mt_usb
 OFOX_FLASHLIGHT_ENABLE := true
-OFOX_FLASHLIGHT_PATH := /sys/class/leds/flashlight
+OFOX_FLASHLIGHT_PATH := /sys/class/leds/torch
 
 # --- ENABLE NATIVE CRYPTO & LOGGING ---
 TW_INCLUDE_CRYPTO := false
@@ -82,6 +83,9 @@ TW_HAS_MTP := true
 # --- LOGICAL PARTITIONS & FASTBOOTD ---
 TW_INCLUDE_LOGICAL := true
 TW_INCLUDE_FASTBOOTD := true
+TW_FASTBOOT_MODE := true
+TW_FLASH_LOGICAL := true
+OFOX_ALLOW_LOGICAL_PARTITIONS := true
 # -----------------------------------------
 
 BOARD_SUPER_PARTITION_SIZE := 4831838208
