@@ -95,7 +95,16 @@ jobs:
             echo "Notice: vendor.zip not found. Proceeding without injection."
           fi
 
-          # 6. FORCE ADB AND OVERRIDE PROP.DEFAULT
+          # 6. Inject Custom Init Scripts and Charger
+          echo "Injecting init.rc scripts and charger from device tree..."
+          cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/init.recovery.usb.rc" "$DEST_ROOT/" || true
+          cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/init.recovery.mt6768.rc" "$DEST_ROOT/" || true
+          cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/charger" "$DEST_ROOT/" || true
+          chmod 750 "$DEST_ROOT/init.recovery.usb.rc" || true
+          chmod 750 "$DEST_ROOT/init.recovery.mt6768.rc" || true
+          chmod 750 "$DEST_ROOT/charger" || true
+
+          # 7. FORCE ADB AND OVERRIDE PROP.DEFAULT
           echo "ro.debuggable=1" >> "$DEST_ROOT/prop.default"
           echo "ro.adb.secure=0" >> "$DEST_ROOT/prop.default"
           echo "sys.usb.config=mtp,adb" >> "$DEST_ROOT/prop.default"
