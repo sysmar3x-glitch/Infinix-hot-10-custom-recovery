@@ -42,10 +42,16 @@ TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
 TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
 BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 
-# Compression
-OF_USE_LZMA_COMPRESSION := 1
-LZMA_RAMDISK_TARGETS := recovery
-BOARD_RAMDISK_USE_LZMA := true
+# --- Ramdisk Compression (Default GZIP) ---
+# Disable/Remove LZMA flags
+BOARD_RAMDISK_USE_LZMA := false
+# OF_USE_LZMA_COMPRESSION := 0
+
+# --- Essential OrangeFox Size Reduction (Required for GZIP) ---
+OFOX_DISABLE_EXTRA_FEATURES := true
+FOX_ENABLE_APP_MANAGER := false
+OFOX_REMOVE_AAPT := true
+TW_EXCLUDE_L10N := true
 
 # Display & UI Setup
 TARGET_SCREEN_WIDTH := 720
