@@ -88,6 +88,7 @@ OFOX_FLASHLIGHT_PATH := /sys/class/leds/torch
 TW_INCLUDE_RESETPROP := true
 TW_NO_SECURE_ADBD := true
 TW_HAS_MTP := true
+FOX_MINIMAL_IMAGE := true
 
 # Fastbootd & Logical Management
 TW_INCLUDE_LOGICAL := true
