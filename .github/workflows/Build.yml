@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: Check Out
+      - name: Check Out Device Tree
         uses: actions/checkout@v4
 
       - name: Cleanup Space
@@ -41,7 +41,7 @@ jobs:
           git config --global user.name "sysmar3x-glitch"
           git config --global user.email "sysmar3x-glitch@users.noreply.github.com"
 
-      - name: Initialize Workspace & Sync
+      - name: Initialize Workspace & Sync Source
         run: |
           mkdir workspace
           cd workspace
@@ -49,38 +49,29 @@ jobs:
           cd sync
           yes | ./orangefox_sync.sh --branch 12.1 --path $GITHUB_WORKSPACE/workspace
 
-      - name: Checkout Device Tree
+      - name: Checkout Device Tree to Target Path
         uses: actions/checkout@v4
         with:
           path: workspace/device/infinix/X682C
           fetch-depth: 1
 
-      - name: Build Recovery
+      - name: Build Recovery Image
         run: |
           cd workspace
           
-          # 1. Patch relink.sh to prevent strict exit code 1 crashes
+          # 1. Patch relink.sh to prevent build failures
           sed -i 's/set -e/set +e/g' bootable/recovery/prebuilt/relink.sh || true
           sed -i 's/exit 1/exit 0/g' bootable/recovery/prebuilt/relink.sh || true
           
-          # 2. Generate a valid RSA 4096 key to prevent the AVB signing crash
+          # 2. Generate RSA 4096 key for AVB signing
           mkdir -p build/make/target/product/security
           openssl genrsa -out build/make/target/product/security/testkey.pem 4096
           
-          # 3. Create an rsync wrapper to globally ignore the vendor symlink crash
-          mkdir -p $GITHUB_WORKSPACE/bin
-          cat << 'EOF' > $GITHUB_WORKSPACE/bin/rsync
-          #!/bin/bash
-          exec /usr/bin/rsync "$@" --exclude=vendor --exclude=vendor/*
-          EOF
-          chmod +x $GITHUB_WORKSPACE/bin/rsync
-          export PATH="$GITHUB_WORKSPACE/bin:$PATH"
-
-          # 4. Define Root Destination
+          # 3. Define Ramdisk Destination Root
           DEST_ROOT="$GITHUB_WORKSPACE/workspace/device/infinix/X682C/recovery/root"
           mkdir -p "$DEST_ROOT"
 
-          # 5. Inject Touch Firmware from vendor.zip
+          # 4. Process and Inject vendor.zip
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
@@ -88,15 +79,34 @@ jobs:
             mkdir -p /tmp/vendor_extract
             unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
             
-            # Extract contents directly into the recovery root
-            cp -rf /tmp/vendor_extract/* "$DEST_ROOT/"
-            echo "Firmware injected successfully!"
+            # Copy extracted vendor structure to recovery root vendor directory
+            mkdir -p "$DEST_ROOT/vendor"
+            if [ -d "/tmp/vendor_extract/vendor" ]; then
+              cp -rf /tmp/vendor_extract/vendor/* "$DEST_ROOT/vendor/"
+            else
+              cp -rf /tmp/vendor_extract/* "$DEST_ROOT/vendor/"
+            fi
+
+            # Mirror firmware into additional standard lookup paths for MTK kernel drivers
+            if [ -d "$DEST_ROOT/vendor/firmware" ]; then
+              mkdir -p "$DEST_ROOT/etc/firmware"
+              mkdir -p "$DEST_ROOT/system/etc/firmware"
+              cp -rf "$DEST_ROOT/vendor/firmware/"* "$DEST_ROOT/etc/firmware/" || true
+              cp -rf "$DEST_ROOT/vendor/firmware/"* "$DEST_ROOT/system/etc/firmware/" || true
+            fi
+
+            # Grant executable permissions to Keymaster/Gatekeeper HAL services
+            if [ -d "$DEST_ROOT/vendor/bin/hw" ]; then
+              chmod 755 "$DEST_ROOT/vendor/bin/hw/"* || true
+            fi
+
+            echo "Vendor binaries and Touch/Crypto firmwares successfully integrated!"
           else
-            echo "Notice: vendor.zip not found. Proceeding without injection."
+            echo "Warning: vendor.zip not found in workspace root."
           fi
 
-          # 6. Inject Custom Init Scripts and Charger
-          echo "Injecting init.rc scripts and charger from device tree..."
+          # 5. Inject Init Scripts and Charger
+          echo "Injecting custom init scripts..."
           cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/init.recovery.usb.rc" "$DEST_ROOT/" || true
           cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/init.recovery.mt6768.rc" "$DEST_ROOT/" || true
           cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/charger" "$DEST_ROOT/" || true
@@ -104,11 +114,12 @@ jobs:
           chmod 750 "$DEST_ROOT/init.recovery.mt6768.rc" || true
           chmod 750 "$DEST_ROOT/charger" || true
 
-          # 7. FORCE ADB AND OVERRIDE PROP.DEFAULT
+          # 6. Default Properties and ADB Debug Overrides
           echo "ro.debuggable=1" >> "$DEST_ROOT/prop.default"
           echo "ro.adb.secure=0" >> "$DEST_ROOT/prop.default"
           echo "sys.usb.config=mtp,adb" >> "$DEST_ROOT/prop.default"
           
+          # 7. Environment Setup & Build Execution
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
@@ -127,7 +138,7 @@ jobs:
           name: Build-Log
           path: workspace/build.log
 
-      - name: Upload Artifact
+      - name: Upload Recovery Artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
