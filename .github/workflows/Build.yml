@@ -67,11 +67,20 @@ jobs:
           mkdir -p build/make/target/product/security
           openssl genrsa -out build/make/target/product/security/testkey.pem 4096
           
-          # 3. Define Ramdisk Destination Root
+          # 3. Create an rsync wrapper to globally ignore the vendor symlink crash
+          mkdir -p $GITHUB_WORKSPACE/bin
+          cat << 'EOF' > $GITHUB_WORKSPACE/bin/rsync
+          #!/bin/bash
+          exec /usr/bin/rsync "$@" --exclude=vendor --exclude=vendor/*
+          EOF
+          chmod +x $GITHUB_WORKSPACE/bin/rsync
+          export PATH="$GITHUB_WORKSPACE/bin:$PATH"
+
+          # 4. Define Ramdisk Destination Root
           DEST_ROOT="$GITHUB_WORKSPACE/workspace/device/infinix/X682C/recovery/root"
           mkdir -p "$DEST_ROOT"
 
-          # 4. Process and Inject vendor.zip
+          # 5. Process and Inject vendor.zip
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
@@ -105,7 +114,7 @@ jobs:
             echo "Warning: vendor.zip not found in workspace root."
           fi
 
-          # 5. Inject Init Scripts and Charger
+          # 6. Inject Init Scripts and Charger
           echo "Injecting custom init scripts..."
           cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/init.recovery.usb.rc" "$DEST_ROOT/" || true
           cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/init.recovery.mt6768.rc" "$DEST_ROOT/" || true
@@ -114,12 +123,12 @@ jobs:
           chmod 750 "$DEST_ROOT/init.recovery.mt6768.rc" || true
           chmod 750 "$DEST_ROOT/charger" || true
 
-          # 6. Default Properties and ADB Debug Overrides
+          # 7. Default Properties and ADB Debug Overrides
           echo "ro.debuggable=1" >> "$DEST_ROOT/prop.default"
           echo "ro.adb.secure=0" >> "$DEST_ROOT/prop.default"
           echo "sys.usb.config=mtp,adb" >> "$DEST_ROOT/prop.default"
           
-          # 7. Environment Setup & Build Execution
+          # 8. Environment Setup & Build Execution
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
