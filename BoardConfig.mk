@@ -43,7 +43,9 @@ TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
 BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 
 # Compression
+FOX_USE_LZMA_COMPRESSION := 1
 LZMA_RAMDISK_TARGETS := recovery
+BOARD_RAMDISK_USE_LZMA := true
 
 # Display & UI Setup
 TARGET_SCREEN_WIDTH := 720
@@ -88,7 +90,6 @@ OFOX_FLASHLIGHT_PATH := /sys/class/leds/torch
 TW_INCLUDE_RESETPROP := true
 TW_NO_SECURE_ADBD := true
 TW_HAS_MTP := true
-FOX_MINIMAL_IMAGE := true
 
 # Fastbootd & Logical Management
 TW_INCLUDE_LOGICAL := true
