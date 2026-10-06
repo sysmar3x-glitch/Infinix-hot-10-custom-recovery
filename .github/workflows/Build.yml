@@ -80,7 +80,7 @@ jobs:
           DEST_ROOT="$GITHUB_WORKSPACE/workspace/device/infinix/X682C/recovery/root"
           mkdir -p "$DEST_ROOT"
 
-          # 5. Process and Inject vendor.zip (Keymaster, Gatekeeper & Firmwares)
+          # 5. Process and Inject vendor.zip (Firmware Only)
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
@@ -88,27 +88,19 @@ jobs:
             mkdir -p /tmp/vendor_extract
             unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
             
-            mkdir -p "$DEST_ROOT/vendor"
-            if [ -d "/tmp/vendor_extract/vendor" ]; then
-              cp -rf /tmp/vendor_extract/vendor/* "$DEST_ROOT/vendor/"
-            else
-              cp -rf /tmp/vendor_extract/* "$DEST_ROOT/vendor/"
+            mkdir -p "$DEST_ROOT/vendor/firmware"
+            mkdir -p "$DEST_ROOT/etc/firmware"
+            
+            # Extract and route the firmware files precisely without duplicating to /system
+            if [ -d "/tmp/vendor_extract/vendor/firmware" ]; then
+              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/vendor/firmware/" || true
+              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/etc/firmware/" || true
+            elif [ -d "/tmp/vendor_extract/firmware" ]; then
+              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/vendor/firmware/" || true
+              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/etc/firmware/" || true
             fi
-
-            # Firmware Paths
-            if [ -d "$DEST_ROOT/vendor/firmware" ]; then
-              mkdir -p "$DEST_ROOT/etc/firmware"
-              mkdir -p "$DEST_ROOT/system/etc/firmware"
-              cp -rf "$DEST_ROOT/vendor/firmware/"* "$DEST_ROOT/etc/firmware/" || true
-              cp -rf "$DEST_ROOT/vendor/firmware/"* "$DEST_ROOT/system/etc/firmware/" || true
-            fi
-
-            # Set Execution Permissions for Binary Services
-            if [ -d "$DEST_ROOT/vendor/bin" ]; then
-              chmod -R 755 "$DEST_ROOT/vendor/bin/" || true
-            fi
-
-            echo "Vendor binaries and decryption services successfully integrated!"
+            
+            echo "Vendor firmware successfully integrated!"
           else
             echo "Warning: vendor.zip not found in workspace root."
           fi
