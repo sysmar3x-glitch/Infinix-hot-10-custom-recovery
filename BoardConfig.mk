@@ -45,15 +45,15 @@ BOARD_MKBOOTIMG_ARGS += --os_patch_level 2022-07
 
 
 # Compression
-OF_USE_LZMA_COMPRESSION := 1
-LZMA_RAMDISK_TARGETS := recovery
-BOARD_RAMDISK_USE_LZMA := true
+#OF_USE_LZMA_COMPRESSION := 1
+#LZMA_RAMDISK_TARGETS := recovery
+#BOARD_RAMDISK_USE_LZMA := true
 
 # --- Essential OrangeFox Size Reduction (Required for GZIP) ---
-#OFOX_DISABLE_EXTRA_FEATURES := true
-#FOX_ENABLE_APP_MANAGER := false
-#OFOX_REMOVE_AAPT := true
-#TW_EXCLUDE_L10N := true
+OFOX_DISABLE_EXTRA_FEATURES := true
+FOX_ENABLE_APP_MANAGER := false
+OFOX_REMOVE_AAPT := true
+TW_EXCLUDE_L10N := true
 
 # Display & UI Setup
 TARGET_SCREEN_WIDTH := 720
