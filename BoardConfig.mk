@@ -59,6 +59,12 @@ OF_DISABLE_MIUI_SPECIFIC_FEATURES := 1
 OF_DONT_KEEP_LOG_HISTORY := 1
 OF_NO_SPLASH_CHANGE := 1
 OF_QUICK_BACKUP_LIST_ONLY := 1
+OF_SCREEN_H := 1640 # Ensure your exact resolution is set
+OF_HIDE_NOTCH := 1
+
+# Exclude unnecessary UI features
+FOX_EXCLUDE_AR := true
+FOX_DELETE_AROMA_FM := true
 
 # Display & UI Setup
 TARGET_SCREEN_WIDTH := 720
@@ -103,6 +109,10 @@ OFOX_FLASHLIGHT_PATH := /sys/class/leds/torch
 TW_INCLUDE_RESETPROP := true
 TW_NO_SECURE_ADBD := true
 TW_HAS_MTP := true
+TW_EXCLUDE_DEFAULT_USB_INIT := true
+FOX_REMOVE_BASH := true
+FOX_REMOVE_NANO := true
+FOX_REMOVE_AAPT := true
 
 # Fastbootd & Logical Management
 TW_INCLUDE_LOGICAL := true
