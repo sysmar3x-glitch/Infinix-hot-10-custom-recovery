@@ -74,9 +74,7 @@ BOARD_SUPER_PARTITION_METADATA_DEVICE := super
 # Hardware Crypto & FBE Decryption Configuration
 # Note: FBE binaries add ~5-8MB. If the build still exceeds 32MB, set these to false.
 TW_INCLUDE_CRYPTO := true
-TW_INCLUDE_CRYPTO_FBE := true
-TW_USE_FSCRYPT_POLICY := 1
-BOARD_USES_METADATA_PARTITION := true
+#TW_USE_FSCRYPT_POLICY := 1
 
 # Android Verified Boot (AVB)
 BOARD_AVB_ENABLE := true
