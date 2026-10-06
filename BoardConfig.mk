@@ -66,6 +66,10 @@ OF_HIDE_NOTCH := 1
 FOX_EXCLUDE_AR := true
 FOX_DELETE_AROMA_FM := true
 
+# 4. Exclude Add-ons (Magisk/App Manager)
+FOX_DELETE_MAGISK_ADDON := true
+FOX_DISABLE_APP_MANAGER := true
+
 # Display & UI Setup
 TARGET_SCREEN_WIDTH := 720
 TARGET_SCREEN_HEIGHT := 1640
