@@ -29,6 +29,12 @@ BOARD_TAGS_OFFSET := 0x0bc08000
 BOARD_DTB_OFFSET := 0x0bc08000
 BOARD_BOOT_HEADER_VERSION := 2
 
+# DTB Configuration
+BOARD_INCLUDE_DTB_IN_BOOTIMG := true
+TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
+TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
+BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
+
 BOARD_MKBOOTIMG_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --second_offset $(BOARD_SECOND_OFFSET)
@@ -38,9 +44,6 @@ BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
 BOARD_MKBOOTIMG_ARGS += --os_version 10.0.0
 BOARD_MKBOOTIMG_ARGS += --os_patch_level 2022-07
 
-TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
-TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
-BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 
 # --- Ramdisk Compression (Default GZIP) ---
 # Disable/Remove LZMA flags
