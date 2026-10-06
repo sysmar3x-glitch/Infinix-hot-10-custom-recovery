@@ -1,7 +1,7 @@
 # Logical Partitions (Hardcoded to device-mapper for .img flashing)
-/system_image   emmc    /dev/block/mapper/system     flags=display="System Image";backup=0;flashimg=1;logical
-/vendor_image   emmc    /dev/block/mapper/vendor     flags=display="Vendor Image";backup=0;flashimg=1;logical
-/product_image  emmc    /dev/block/mapper/product    flags=display="Product Image";backup=0;flashimg=1;logical
+/system_image   emmc    /dev/block/mapper/system     flags=display="System";backup=0;flashimg=1;logical
+/vendor_image   emmc    /dev/block/mapper/vendor     flags=display="Vendor";backup=0;flashimg=1;logical
+/product_image  emmc    /dev/block/mapper/product    flags=display="Product";backup=0;flashimg=1;logical
 
 # Physical Super Partition (REQUIRED for Logical Partitions to map)
 /super          emmc    /dev/block/platform/bootdevice/by-name/super        flags=display="Super";backup=1;flashimg=1
