@@ -5,8 +5,6 @@ on init
     setprop sys.usb.configfs 1
     setprop sys.usb.ffs.aio_compat 1
     setprop vendor.usb.controller "musb-hdrc"
-    # Fallback default USB controller for MediaTek MT6768
-    setprop sys.usb.controller "musb-hdrc"
     setprop vendor.usb.acm_cnt 0
     setprop vendor.usb.acm_port0 ""
     setprop vendor.usb.acm_port1 ""
@@ -47,7 +45,6 @@ on fs
 on property:sys.usb.config=none
     write /config/usb_gadget/g1/UDC "none"
     stop adbd
-    stop fastbootd
     setprop sys.usb.ffs.ready 0
     setprop sys.usb.ffs.mtp.ready 0
     write /config/usb_gadget/g1/bDeviceClass 0
@@ -58,6 +55,7 @@ on property:sys.usb.config=none
     rm /config/usb_gadget/g1/configs/b.1/f3
     rm /config/usb_gadget/g1/configs/b.1/f4
     rm /config/usb_gadget/g1/configs/b.1/f5
+    #rmdir /config/usb_gadget/g1/functions/rndis.gs4
     write /sys/devices/platform/mt_usb/saving 0
     setprop sys.usb.state ${sys.usb.config}
 
@@ -112,25 +110,7 @@ on property:sys.usb.ffs.ready=1 && property:sys.usb.config=mtp,adb
     symlink /config/usb_gadget/g1/functions/ffs.adb /config/usb_gadget/g1/configs/b.1/f2
     write /config/usb_gadget/g1/UDC ${sys.usb.controller}
     setprop sys.usb.state ${sys.usb.config}
-
-# Standalone Fastbootd Mode
-on property:sys.usb.config=fastboot
-    stop adbd
-    start fastbootd
-
-on property:sys.usb.ffs.ready=1 && property:sys.usb.config=fastboot
-    write /config/usb_gadget/g1/configs/b.1/strings/0x409/configuration "fastboot"
-    rm /config/usb_gadget/g1/configs/b.1/f1
-    rm /config/usb_gadget/g1/configs/b.1/f2
-    rm /config/usb_gadget/g1/configs/b.1/f3
-    rm /config/usb_gadget/g1/configs/b.1/f4
-    rm /config/usb_gadget/g1/configs/b.1/f5
-    write /config/usb_gadget/g1/idVendor 0x18d1
-    write /config/usb_gadget/g1/idProduct 0x4ee0
-    symlink /config/usb_gadget/g1/functions/ffs.fastboot /config/usb_gadget/g1/configs/b.1/f1
-    write /config/usb_gadget/g1/UDC ${sys.usb.controller}
-    setprop sys.usb.state ${sys.usb.config}
-
+    
 on property:sys.usb.config=mtp,fastboot
     stop adbd
     start fastbootd
