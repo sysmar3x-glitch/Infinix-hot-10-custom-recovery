@@ -30,7 +30,6 @@ BOARD_DTB_OFFSET := 0x0bc08000
 BOARD_BOOT_HEADER_VERSION := 2
 
 # DTB Configuration
-BOARD_INCLUDE_DTB_IN_BOOTIMG := true
 TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
 TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
 BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
