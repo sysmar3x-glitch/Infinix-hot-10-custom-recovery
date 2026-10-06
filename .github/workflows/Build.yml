@@ -80,7 +80,7 @@ jobs:
           DEST_ROOT="$GITHUB_WORKSPACE/workspace/device/infinix/X682C/recovery/root"
           mkdir -p "$DEST_ROOT"
 
-          # 5. Process and Inject vendor.zip
+          # 5. Process and Inject vendor.zip (Keymaster, Gatekeeper & Firmwares)
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
@@ -88,7 +88,6 @@ jobs:
             mkdir -p /tmp/vendor_extract
             unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
             
-            # Copy extracted vendor structure to recovery root vendor directory
             mkdir -p "$DEST_ROOT/vendor"
             if [ -d "/tmp/vendor_extract/vendor" ]; then
               cp -rf /tmp/vendor_extract/vendor/* "$DEST_ROOT/vendor/"
@@ -96,7 +95,7 @@ jobs:
               cp -rf /tmp/vendor_extract/* "$DEST_ROOT/vendor/"
             fi
 
-            # Mirror firmware into additional standard lookup paths for MTK kernel drivers
+            # Firmware Paths
             if [ -d "$DEST_ROOT/vendor/firmware" ]; then
               mkdir -p "$DEST_ROOT/etc/firmware"
               mkdir -p "$DEST_ROOT/system/etc/firmware"
@@ -104,12 +103,12 @@ jobs:
               cp -rf "$DEST_ROOT/vendor/firmware/"* "$DEST_ROOT/system/etc/firmware/" || true
             fi
 
-            # Grant executable permissions to Keymaster/Gatekeeper HAL services
-            if [ -d "$DEST_ROOT/vendor/bin/hw" ]; then
-              chmod 755 "$DEST_ROOT/vendor/bin/hw/"* || true
+            # Set Execution Permissions for Binary Services
+            if [ -d "$DEST_ROOT/vendor/bin" ]; then
+              chmod -R 755 "$DEST_ROOT/vendor/bin/" || true
             fi
 
-            echo "Vendor binaries and Touch/Crypto firmwares successfully integrated!"
+            echo "Vendor binaries and decryption services successfully integrated!"
           else
             echo "Warning: vendor.zip not found in workspace root."
           fi
@@ -127,6 +126,7 @@ jobs:
           echo "ro.debuggable=1" >> "$DEST_ROOT/prop.default"
           echo "ro.adb.secure=0" >> "$DEST_ROOT/prop.default"
           echo "sys.usb.config=mtp,adb" >> "$DEST_ROOT/prop.default"
+          echo "ro.hardware=mt6768" >> "$DEST_ROOT/prop.default"
           
           # 8. Environment Setup & Build Execution
           set +e
