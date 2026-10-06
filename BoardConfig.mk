@@ -1,3 +1,11 @@
+#
+# Copyright (C) 2026 The Android Open Source Project
+# Copyright (C) 2026 The OrangeFox Open Source Project
+# Device Configuration for Infinix Hot 10 (X682C)
+#
+
+DEVICE_PATH := device/infinix/X682C
+
 # Architecture
 TARGET_ARCH := arm64
 TARGET_ARCH_VARIANT := armv8-a
@@ -18,6 +26,11 @@ TARGET_NO_BOOTLOADER := true
 TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_USES_MTK_HARDWARE := true
 
+# Anti-Rollback & Version Spoofing (Bypasses Bootloader Verification Failure)
+PLATFORM_SECURITY_PATCH := 2099-12-31
+VENDOR_SECURITY_PATCH := 2099-12-31
+PLATFORM_VERSION := 16.1.0
+
 # Kernel & Boot Image Headers
 BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 buildvariant=user androidboot.selinux=permissive
 BOARD_KERNEL_BASE := 0x40078000
@@ -29,58 +42,19 @@ BOARD_TAGS_OFFSET := 0x0bc08000
 BOARD_DTB_OFFSET := 0x0bc08000
 BOARD_BOOT_HEADER_VERSION := 2
 
-# DTB Configuration
-TARGET_PREBUILT_KERNEL := device/infinix/X682C/prebuilt/Image.gz-dtb
-TARGET_PREBUILT_DTB := device/infinix/X682C/prebuilt/dtb.img
-BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
+# Prebuilt Kernel & DTB
+TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/Image.gz-dtb
+TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilt/dtb.img
 
 BOARD_MKBOOTIMG_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --second_offset $(BOARD_SECOND_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_TAGS_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --dtb_offset $(BOARD_DTB_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
 BOARD_MKBOOTIMG_ARGS += --os_version 10.0.0
 BOARD_MKBOOTIMG_ARGS += --os_patch_level 2022-07
-
-
-# Compression
-#OF_USE_LZMA_COMPRESSION := 1
-#LZMA_RAMDISK_TARGETS := recovery
-#BOARD_RAMDISK_USE_LZMA := true
-
-# --- Essential OrangeFox Size Reduction (Required for GZIP) ---
-OFOX_DISABLE_EXTRA_FEATURES := true
-FOX_ENABLE_APP_MANAGER := false
-OFOX_REMOVE_AAPT := true
-TW_EXCLUDE_L10N := true
-TW_EXTRA_LANGUAGES := false
-OF_DISABLE_MIUI_SPECIFIC_FEATURES := 1
-OF_DONT_KEEP_LOG_HISTORY := 1
-OF_NO_SPLASH_CHANGE := 1
-OF_QUICK_BACKUP_LIST_ONLY := 1
-OF_SCREEN_H := 1640 # Ensure your exact resolution is set
-OF_HIDE_NOTCH := 1
-
-# Exclude unnecessary UI features
-FOX_EXCLUDE_AR := true
-FOX_DELETE_AROMA_FM := true
-
-# 4. Exclude Add-ons (Magisk/App Manager)
-FOX_DELETE_MAGISK_ADDON := true
-FOX_DISABLE_APP_MANAGER := true
-
-# Display & UI Setup
-TARGET_SCREEN_WIDTH := 720
-TARGET_SCREEN_HEIGHT := 1640
-TW_THEME := portrait_hdpi
-TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
-TW_MAX_BRIGHTNESS := 255
-TW_DEFAULT_BRIGHTNESS := 200
-TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
-TW_GRALLOC_BUILD_INLINE := true
-TW_CUSTOM_BATTERY_PATH := "/sys/class/power_supply/battery"
-TARGET_RECOVERY_DEFAULT_TIME_ZONE := "Asia/Calcutta"
 
 # Partitions & Sizes
 BOARD_BUILD_SYSTEM_ROOT_IMAGE := false
@@ -97,6 +71,12 @@ BOARD_SUPER_PARTITION_BLOCK_DEVICES := super
 BOARD_SUPER_DEVICE_SUPER_DEVICE_SIZE := 5855272960
 BOARD_SUPER_PARTITION_METADATA_DEVICE := super
 
+# Hardware Crypto & FBE Decryption Configuration
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_CRYPTO_FBE := true
+TW_USE_FSCRYPT_POLICY := 1
+BOARD_USES_METADATA_PARTITION := true
+
 # Android Verified Boot (AVB)
 BOARD_AVB_ENABLE := true
 BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS += --flags 2
@@ -105,7 +85,39 @@ BOARD_AVB_RECOVERY_ALGORITHM := SHA256_RSA4096
 BOARD_AVB_RECOVERY_ROLLBACK_INDEX := 1
 BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION := 1
 
-# OrangeFox & TWRP Features
+# OrangeFox Size Reduction (Required to fit in 32MB under GZIP)
+OFOX_DISABLE_EXTRA_FEATURES := true
+FOX_ENABLE_APP_MANAGER := false
+OFOX_REMOVE_AAPT := true
+TW_EXCLUDE_L10N := true
+TW_EXTRA_LANGUAGES := false
+OF_DISABLE_MIUI_SPECIFIC_FEATURES := 1
+OF_DONT_KEEP_LOG_HISTORY := 1
+OF_NO_SPLASH_CHANGE := 1
+OF_QUICK_BACKUP_LIST_ONLY := 1
+OF_SCREEN_H := 1640
+OF_HIDE_NOTCH := 1
+
+FOX_EXCLUDE_AR := true
+FOX_DELETE_AROMA_FM := true
+FOX_DELETE_MAGISK_ADDON := true
+FOX_DISABLE_APP_MANAGER := true
+FOX_REMOVE_BASH := true
+FOX_REMOVE_NANO := true
+
+# Display & UI Setup
+TARGET_SCREEN_WIDTH := 720
+TARGET_SCREEN_HEIGHT := 1640
+TW_THEME := portrait_hdpi
+TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
+TW_MAX_BRIGHTNESS := 255
+TW_DEFAULT_BRIGHTNESS := 200
+TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
+TW_GRALLOC_BUILD_INLINE := true
+TW_CUSTOM_BATTERY_PATH := "/sys/class/power_supply/battery"
+TARGET_RECOVERY_DEFAULT_TIME_ZONE := "Asia/Calcutta"
+
+# Feature Flags
 OFOX_AB_DEVICE := false
 OFOX_BANNED_USB_PATH := /sys/devices/platform/mt_usb
 OFOX_FLASHLIGHT_ENABLE := true
@@ -114,9 +126,6 @@ TW_INCLUDE_RESETPROP := true
 TW_NO_SECURE_ADBD := true
 TW_HAS_MTP := true
 TW_EXCLUDE_DEFAULT_USB_INIT := true
-FOX_REMOVE_BASH := true
-FOX_REMOVE_NANO := true
-FOX_REMOVE_AAPT := true
 
 # Fastbootd & Logical Management
 TW_INCLUDE_LOGICAL := true
@@ -124,9 +133,3 @@ TW_INCLUDE_FASTBOOTD := true
 TW_FASTBOOT_MODE := true
 TW_FLASH_LOGICAL := true
 OFOX_ALLOW_LOGICAL_PARTITIONS := true
-
-# Hardware Crypto (Beanpod Keymaster / Gatekeeper)
-TW_INCLUDE_CRYPTO := true
-TW_INCLUDE_CRYPTO_FBE := false
-TW_INCLUDE_FBE_METADATA_DECRYPT := false
-BOARD_USES_METADATA_PARTITION := false
