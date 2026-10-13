@@ -30,7 +30,7 @@ jobs:
       - name: Prepare Build Environment
         run: |
           sudo apt update && sudo apt upgrade -y
-          DEBIAN_FRONTEND=noninteractive sudo apt install -yq git python3 tar aria2 openssl unzip
+          DEBIAN_FRONTEND=noninteractive sudo apt install -yq git python3 tar aria2 openssl unzip pigz gzip
           
           git clone https://gitlab.com/OrangeFox/misc/scripts ofox_scripts
           cd ofox_scripts
@@ -59,28 +59,28 @@ jobs:
         run: |
           cd workspace
           
-          # 1. Patch relink.sh to prevent build failures
+          # 1. Patch relink.sh to prevent build failures on prebuilts
           sed -i 's/set -e/set +e/g' bootable/recovery/prebuilt/relink.sh || true
           sed -i 's/exit 1/exit 0/g' bootable/recovery/prebuilt/relink.sh || true
           
           # 2. Generate RSA 4096 key for AVB signing
           mkdir -p build/make/target/product/security
           openssl genrsa -out build/make/target/product/security/testkey.pem 4096
-          
-          # 3. Create an rsync wrapper to globally ignore the vendor symlink crash
-          mkdir -p $GITHUB_WORKSPACE/bin
-          cat << 'EOF' > $GITHUB_WORKSPACE/bin/rsync
-          #!/bin/bash
-          exec /usr/bin/rsync "$@" --exclude=vendor --exclude=vendor/*
-          EOF
-          chmod +x $GITHUB_WORKSPACE/bin/rsync
-          export PATH="$GITHUB_WORKSPACE/bin:$PATH"
 
-          # 4. Define Ramdisk Destination Root
-          DEST_ROOT="$GITHUB_WORKSPACE/workspace/device/infinix/X682C/recovery/root"
-          mkdir -p "$DEST_ROOT"
+          # 3. Define Ramdisk Destination Root
+          TREE_DIR="$GITHUB_WORKSPACE/workspace/device/infinix/X682C"
+          DEST_ROOT="$TREE_DIR/recovery/root"
+          mkdir -p "$DEST_ROOT/system/etc"
+          mkdir -p "$DEST_ROOT/etc"
 
-          # 5. Process and Inject vendor.zip (Firmware Only)
+          # 4. Enforce Clean FSTAB and Flags Injection (Eliminate stale ramdisk copies)
+          rm -rf "$DEST_ROOT/first_stage_ramdisk"
+          cp -f "$TREE_DIR/recovery.fstab" "$DEST_ROOT/system/etc/recovery.fstab"
+          cp -f "$TREE_DIR/recovery.fstab" "$DEST_ROOT/etc/recovery.fstab"
+          cp -f "$TREE_DIR/twrp.flags" "$DEST_ROOT/system/etc/twrp.flags"
+          cp -f "$TREE_DIR/twrp.flags" "$DEST_ROOT/etc/twrp.flags"
+
+          # 5. Process and Inject vendor.zip Firmware (Touch/Sensor Firmware)
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
@@ -88,38 +88,37 @@ jobs:
             mkdir -p /tmp/vendor_extract
             unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
             
+            mkdir -p "$DEST_ROOT/system/vendor/firmware"
             mkdir -p "$DEST_ROOT/vendor/firmware"
             mkdir -p "$DEST_ROOT/etc/firmware"
             
-            # Extract and route the firmware files precisely without duplicating to /system
             if [ -d "/tmp/vendor_extract/vendor/firmware" ]; then
+              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/system/vendor/firmware/" || true
               cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/vendor/firmware/" || true
               cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/etc/firmware/" || true
             elif [ -d "/tmp/vendor_extract/firmware" ]; then
+              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/system/vendor/firmware/" || true
               cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/vendor/firmware/" || true
               cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/etc/firmware/" || true
             fi
-            
-            echo "Vendor firmware successfully integrated!"
-          else
-            echo "Warning: vendor.zip not found in workspace root."
+            echo "Vendor firmware successfully integrated."
           fi
 
-          # 6. Inject Init Scripts and Charger
-          echo "Injecting custom init scripts..."
-          cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/init.recovery.usb.rc" "$DEST_ROOT/" || true
-          cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/init.recovery.mt6768.rc" "$DEST_ROOT/" || true
-          cp "$GITHUB_WORKSPACE/workspace/device/infinix/X682C/charger" "$DEST_ROOT/" || true
-          chmod 750 "$DEST_ROOT/init.recovery.usb.rc" || true
-          chmod 750 "$DEST_ROOT/init.recovery.mt6768.rc" || true
-          chmod 750 "$DEST_ROOT/charger" || true
+          # 6. Fix Symlinks and Scripts in Ramdisk
+          echo "Setting up init scripts and true charger symlink..."
+          cp -f "$TREE_DIR/init.recovery.usb.rc" "$DEST_ROOT/init.recovery.usb.rc"
+          cp -f "$TREE_DIR/init.recovery.mt6768.rc" "$DEST_ROOT/init.recovery.mt6768.rc"
+          chmod 750 "$DEST_ROOT/init.recovery.usb.rc"
+          chmod 750 "$DEST_ROOT/init.recovery.mt6768.rc"
+          
+          # Remove corrupted Windows symlink and create a valid Unix symlink for charger
+          rm -f "$TREE_DIR/charger" "$DEST_ROOT/charger"
+          ln -sf /system/bin/charger "$DEST_ROOT/charger"
 
-          # 7. Default Properties and ADB Debug Overrides
+          # 7. Default Properties Configuration
           echo "ro.debuggable=1" >> "$DEST_ROOT/prop.default"
           echo "ro.adb.secure=0" >> "$DEST_ROOT/prop.default"
-          echo "sys.usb.config=mtp,adb" >> "$DEST_ROOT/prop.default"
-          echo "ro.hardware=mt6768" >> "$DEST_ROOT/prop.default"
-          
+
           # 8. Environment Setup & Build Execution
           set +e
           source build/envsetup.sh
@@ -131,6 +130,17 @@ jobs:
           
           set -e -o pipefail
           mka adbd recoveryimage 2>&1 | tee build.log
+
+          # 9. Post-Build Image Size Verification (Must be <= 33554432 bytes per SYS15)
+          REC_IMG="out/target/product/X682C/recovery.img"
+          if [ -f "$REC_IMG" ]; then
+            IMG_SIZE=$(stat -c%s "$REC_IMG")
+            echo "Built recovery.img size: $IMG_SIZE / 33554432 bytes"
+            if [ "$IMG_SIZE" -gt 33554432 ]; then
+              echo "ERROR: recovery.img exceeds 32MB partition boundary!"
+              exit 1
+            fi
+          fi
 
       - name: Upload Build Log
         if: always()
