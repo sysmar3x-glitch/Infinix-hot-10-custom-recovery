@@ -1,26 +1,26 @@
-# Logical Partitions (Hardcoded to device-mapper for .img flashing)
-/system_image   emmc    /dev/block/mapper/system     flags=display="System";backup=0;flashimg=1;logical
-/vendor_image   emmc    /dev/block/mapper/vendor     flags=display="Vendor";backup=0;flashimg=1;logical
-/product_image  emmc    /dev/block/mapper/product    flags=display="Product";backup=0;flashimg=1;logical
+# Logical Partitions (Dynamic Partition Images)
+/system_image   emmc    /dev/block/platform/bootdevice/by-name/system       flags=display="System Image";backup=1;flashimg=1
+/vendor_image   emmc    /dev/block/platform/bootdevice/by-name/vendor       flags=display="Vendor Image";backup=1;flashimg=1
+/product_image  emmc    /dev/block/platform/bootdevice/by-name/product      flags=display="Product Image";backup=1;flashimg=1
 
-# Physical Super Partition (REQUIRED for Logical Partitions to map)
+# Super Partition
 /super          emmc    /dev/block/platform/bootdevice/by-name/super        flags=display="Super";backup=1;flashimg=1
 
-# Physical Boot & Recovery Partitions
-/recovery       emmc    /dev/block/platform/bootdevice/by-name/recovery     flags=display="Recovery";backup=1;flashimg=1
+# Core Boot / Firmware Partitions
 /boot           emmc    /dev/block/platform/bootdevice/by-name/boot         flags=display="Boot";backup=1;flashimg=1
+/recovery       emmc    /dev/block/platform/bootdevice/by-name/recovery     flags=display="Recovery";backup=1;flashimg=1
 /dtbo           emmc    /dev/block/platform/bootdevice/by-name/dtbo         flags=display="DTBO";backup=1;flashimg=1
 /vbmeta         emmc    /dev/block/platform/bootdevice/by-name/vbmeta       flags=display="VBMeta";backup=1;flashimg=1
 /vbmeta_system  emmc    /dev/block/platform/bootdevice/by-name/vbmeta_system flags=display="VBMeta System";backup=1;flashimg=1
 /vbmeta_vendor  emmc    /dev/block/platform/bootdevice/by-name/vbmeta_vendor flags=display="VBMeta Vendor";backup=1;flashimg=1
 /logo           emmc    /dev/block/platform/bootdevice/by-name/logo         flags=display="Logo";backup=1;flashimg=1
 
-# Standard Partitions 
-/data           ext4    /dev/block/platform/bootdevice/by-name/userdata     flags=fileencryption=aes-256-xts:aes-256-cts:v1;wipeingui;wipeduringfactoryreset;backup=1
-/cache          ext4    /dev/block/platform/bootdevice/by-name/cache        flags=display="Cache";wipeingui
-/metadata       ext4    /dev/block/platform/bootdevice/by-name/metadata     flags=display="Metadata";wipeingui
+# Data, Metadata and Cache
+/data           auto    /dev/block/platform/bootdevice/by-name/userdata     flags=display="Data";backup=1;wipeingui;wipeduringfactoryreset
+/metadata       ext4    /dev/block/platform/bootdevice/by-name/md_udc       flags=display="Metadata";backup=1;wipeingui
+/cache          ext4    /dev/block/platform/bootdevice/by-name/cache        flags=display="Cache";backup=1;wipeingui
 
-# MTK Specific Partitions
+# MediaTek NVRAM / Protected Data
 /nvram          emmc    /dev/block/platform/bootdevice/by-name/nvram        flags=display="NVRAM";backup=1
 /nvdata         ext4    /dev/block/platform/bootdevice/by-name/nvdata       flags=display="NVDATA";backup=1
 /nvcfg          ext4    /dev/block/platform/bootdevice/by-name/nvcfg        flags=display="NVCFG";backup=1
@@ -29,7 +29,8 @@
 /persist        ext4    /dev/block/platform/bootdevice/by-name/persist      flags=display="Persist";backup=1
 /tranfs         ext4    /dev/block/platform/bootdevice/by-name/tranfs       flags=display="TranFS";backup=1
 /tkv            emmc    /dev/block/platform/bootdevice/by-name/tkv          flags=display="TKV";backup=1
+/misc           emmc    /dev/block/platform/bootdevice/by-name/misc         flags=display="Misc";backup=1
 
-# Removable Storage
-/external_sd    auto    /devices/platform/externdevice*                     flags=display="MicroSD";storage;wipeingui;removable
+# External Removable Storage
+/external_sd    auto    /devices/platform/externdevice*                     flags=display="MicroSD Card";storage;wipeingui;removable
 /usb_otg        auto    /devices/platform/mt_usb*                           flags=display="USB-OTG";storage;wipeingui;removable
