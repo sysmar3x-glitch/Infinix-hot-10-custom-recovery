@@ -67,20 +67,16 @@ jobs:
           mkdir -p build/make/target/product/security
           openssl genrsa -out build/make/target/product/security/testkey.pem 4096
 
-          # 3. Define Ramdisk Destination Root
+          # 3. Define Ramdisk Destination Root (Use /system/etc and /system/vendor to preserve Android 12 root symlinks)
           TREE_DIR="$GITHUB_WORKSPACE/workspace/device/infinix/X682C"
           DEST_ROOT="$TREE_DIR/recovery/root"
           mkdir -p "$DEST_ROOT/system/etc"
-          mkdir -p "$DEST_ROOT/etc"
 
-          # 4. Enforce Clean FSTAB and Flags Injection (Eliminate stale ramdisk copies)
-          rm -rf "$DEST_ROOT/first_stage_ramdisk"
+          # 4. Copy Clean FSTAB and Flags
           cp -f "$TREE_DIR/recovery.fstab" "$DEST_ROOT/system/etc/recovery.fstab"
-          cp -f "$TREE_DIR/recovery.fstab" "$DEST_ROOT/etc/recovery.fstab"
           cp -f "$TREE_DIR/twrp.flags" "$DEST_ROOT/system/etc/twrp.flags"
-          cp -f "$TREE_DIR/twrp.flags" "$DEST_ROOT/etc/twrp.flags"
 
-          # 5. Process and Inject vendor.zip Firmware (Touch/Sensor Firmware)
+          # 5. Process and Inject vendor.zip Firmware into /system/vendor and /system/etc
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
@@ -89,29 +85,34 @@ jobs:
             unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
             
             mkdir -p "$DEST_ROOT/system/vendor/firmware"
-            mkdir -p "$DEST_ROOT/vendor/firmware"
-            mkdir -p "$DEST_ROOT/etc/firmware"
+            mkdir -p "$DEST_ROOT/system/etc/firmware"
             
             if [ -d "/tmp/vendor_extract/vendor/firmware" ]; then
               cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/system/vendor/firmware/" || true
-              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/vendor/firmware/" || true
-              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/etc/firmware/" || true
+              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/system/etc/firmware/" || true
             elif [ -d "/tmp/vendor_extract/firmware" ]; then
               cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/system/vendor/firmware/" || true
-              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/vendor/firmware/" || true
-              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/etc/firmware/" || true
+              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/system/etc/firmware/" || true
+            fi
+
+            # Also copy any touch kernel modules (.ko) if present in vendor.zip
+            if [ -d "/tmp/vendor_extract/vendor/lib/modules" ]; then
+              mkdir -p "$DEST_ROOT/system/vendor/lib/modules"
+              cp -rf /tmp/vendor_extract/vendor/lib/modules/* "$DEST_ROOT/system/vendor/lib/modules/" || true
+            elif [ -d "/tmp/vendor_extract/lib/modules" ]; then
+              mkdir -p "$DEST_ROOT/system/vendor/lib/modules"
+              cp -rf /tmp/vendor_extract/lib/modules/* "$DEST_ROOT/system/vendor/lib/modules/" || true
             fi
             echo "Vendor firmware successfully integrated."
           fi
 
-          # 6. Fix Symlinks and Scripts in Ramdisk
+          # 6. Inject Init Scripts and Create Valid Unix Symlink for charger
           echo "Setting up init scripts and true charger symlink..."
           cp -f "$TREE_DIR/init.recovery.usb.rc" "$DEST_ROOT/init.recovery.usb.rc"
           cp -f "$TREE_DIR/init.recovery.mt6768.rc" "$DEST_ROOT/init.recovery.mt6768.rc"
           chmod 750 "$DEST_ROOT/init.recovery.usb.rc"
           chmod 750 "$DEST_ROOT/init.recovery.mt6768.rc"
           
-          # Remove corrupted Windows symlink and create a valid Unix symlink for charger
           rm -f "$TREE_DIR/charger" "$DEST_ROOT/charger"
           ln -sf /system/bin/charger "$DEST_ROOT/charger"
 
