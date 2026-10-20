@@ -1,3 +1,5 @@
+import /init.recovery.microtrust.rc
+
 on early-init
     symlink /dev/block/platform/bootdevice /dev/block/bootdevice
     symlink /dev/block/platform/bootdevice/by-name /dev/block/by-name
@@ -5,56 +7,36 @@ on early-init
 on init
     export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/system/lib:/vendor/lib
     setprop sys.usb.configfs 1
-    setprop crypto.ready 1
     symlink /dev/block/platform/bootdevice /dev/block/bootdevice
     symlink /dev/block/platform/bootdevice/by-name /dev/block/by-name
+    mkdir /mnt/vendor 0755 root root
+    mkdir /mnt/vendor/persist 0700 root root
+    mount ext4 /dev/block/platform/bootdevice/by-name/persist /mnt/vendor/persist
+    setprop crypto.ready 1
 
 on fs
     symlink /dev/block/platform/bootdevice /dev/block/bootdevice
     symlink /dev/block/platform/bootdevice/by-name /dev/block/by-name
-    mkdir /mnt/vendor 0755 root root
-    mkdir /mnt/vendor/persist 0755 root root
-    mkdir /mnt/vendor/protect_f 0770 root root
-    mkdir /mnt/vendor/protect_s 0770 root root
-    mkdir /mnt/vendor/nvdata 0771 root root
-    mkdir /mnt/vendor/nvcfg 0771 root root
-    mount ext4 /dev/block/platform/bootdevice/by-name/persist /mnt/vendor/persist noatime nosuid nodev commit=1
-    mount ext4 /dev/block/platform/bootdevice/by-name/protect1 /mnt/vendor/protect_f noatime nosuid nodev commit=1
-    mount ext4 /dev/block/platform/bootdevice/by-name/protect2 /mnt/vendor/protect_s noatime nosuid nodev commit=1
-    mount ext4 /dev/block/platform/bootdevice/by-name/nvdata /mnt/vendor/nvdata noatime nosuid nodev commit=1
-    mount ext4 /dev/block/platform/bootdevice/by-name/nvcfg /mnt/vendor/nvcfg noatime nosuid nodev commit=1
+    install_keyring
+    start hwservicemanager
 
 on post-fs
     symlink /dev/block/mmcblk0boot0 /dev/block/platform/bootdevice/by-name/preloader_a
     symlink /dev/block/mmcblk0boot1 /dev/block/platform/bootdevice/by-name/preloader_b
-    mkdir /data/vendor 0755 root root
-    mkdir /data/vendor/thh 0755 root root
-    mkdir /data/vendor/thh/system 0755 root root
-    start hwservicemanager
-    start vndservicemanager
-    start teei_daemon
-    start keymaster-4-0-beanpod
-    start gatekeeper-1-0
 
 on boot
     write /sys/class/leds/lcd-backlight/brightness 200
 
-# Non-blocking background services (NO shutdown critical, NO writepid so boot can never hang)
-service vndservicemanager /vendor/bin/vndservicemanager /dev/vndbinder
-    user root
+service keystore_auth /system/bin/keystore_auth
+    oneshot
+    user system
     group root
     disabled
     seclabel u:r:recovery:s0
 
-service teei_daemon /vendor/bin/teei_daemon
+service keystore /system/bin/keystore /tmp/misc/keystore
     user root
-    group root
-    disabled
-    seclabel u:r:recovery:s0
-
-service keymaster-4-0-beanpod /vendor/bin/hw/android.hardware.keymaster@4.0-service.beanpod
-    user root
-    group root drmrpc
+    group root drmrpc readproc
     disabled
     seclabel u:r:recovery:s0
 
@@ -63,3 +45,39 @@ service gatekeeper-1-0 /vendor/bin/hw/android.hardware.gatekeeper@1.0-service
     group root
     disabled
     seclabel u:r:recovery:s0
+
+service keymaster-4-0 /vendor/bin/hw/android.hardware.keymaster@4.0-service.beanpod
+    user root
+    group root drmrpc
+    disabled
+    seclabel u:r:recovery:s0
+
+service capi-2-0 /vendor/bin/hw/vendor.microtrust.hardware.capi@2.0-service
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+on property:hwservicemanager.ready=true
+    start teei_daemon
+    start capi-2-0
+    start keymaster-4-0
+    start gatekeeper-1-0
+
+on property:ro.crypto.state=unsupported
+    stop teei_daemon
+    stop capi-2-0
+    stop keymaster-4-0
+    stop gatekeeper-1-0
+
+on property:ro.crypto.state=unencrypted
+    stop teei_daemon
+    stop capi-2-0
+    stop keymaster-4-0
+    stop gatekeeper-1-0
+
+on property:twrp.decrypt.done=true
+    stop teei_daemon
+    stop capi-2-0
+    stop keymaster-4-0
+    stop gatekeeper-1-0
