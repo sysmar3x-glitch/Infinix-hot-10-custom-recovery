@@ -11,14 +11,15 @@ TARGET_ARCH := arm64
 TARGET_ARCH_VARIANT := armv8-a
 TARGET_CPU_ABI := arm64-v8a
 TARGET_CPU_ABI2 :=
-TARGET_CPU_VARIANT := generic
+TARGET_CPU_VARIANT := cortex-a73
 
 TARGET_2ND_ARCH := arm
 TARGET_2ND_ARCH_VARIANT := armv8-a
 TARGET_2ND_CPU_ABI := armeabi-v7a
 TARGET_2ND_CPU_ABI2 := armeabi
-TARGET_2ND_CPU_VARIANT := generic
+TARGET_2ND_CPU_VARIANT := cortex-a53
 TARGET_SUPPORTS_64_BIT_APPS := true
+TARGET_USES_64_BIT_BINDER := true
 
 # Platform & Bootloader (Matched to MT6768_Android_scatter.txt & android-info.txt)
 TARGET_BOARD_PLATFORM := mt6768
@@ -27,8 +28,9 @@ TARGET_NO_BOOTLOADER := true
 BOARD_USES_MTK_HARDWARE := true
 TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
+TARGET_OTA_ASSERT_DEVICE := x682b,x682c,X682B,X682C
 
-# Anti-Rollback & Version Spoofing (Required for FBE Decryption across A10-A16)
+# Anti-Rollback & Version Spoofing (Required for FBE Decryption)
 PLATFORM_SECURITY_PATCH := 2099-12-31
 VENDOR_SECURITY_PATCH := 2099-12-31
 PLATFORM_VERSION := 16.1.0
@@ -59,7 +61,6 @@ BOARD_MKBOOTIMG_ARGS += --os_version 10.0.0
 BOARD_MKBOOTIMG_ARGS += --os_patch_level 2022-07
 
 # Exact Partition Sizes from MT6768_Android_scatter.txt
-# SYS15 (recovery) = 0x2000000, SYS31 (boot) = 0x2000000, SYS32 (dtbo) = 0x800000, SYS39 (cache) = 0x12c00000
 BOARD_BUILD_SYSTEM_ROOT_IMAGE := false
 BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_FLASH_BLOCK_SIZE := 131072
@@ -69,8 +70,7 @@ BOARD_DTBOIMG_PARTITION_SIZE := 8388608
 BOARD_CACHEIMAGE_PARTITION_SIZE := 314572800
 BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
 
-# Dynamic / Logical Partitions
-# SYS38 (super) = 0x15d000000 = 5855248384 bytes
+# Dynamic / Logical Partitions (SYS38 super = 0x15d000000 = 5855248384 bytes)
 BOARD_SUPER_PARTITION_SIZE := 5855248384
 BOARD_SUPER_PARTITION_GROUPS := main
 BOARD_MAIN_PARTITION_LIST := system vendor product
@@ -79,10 +79,24 @@ BOARD_SUPER_PARTITION_BLOCK_DEVICES := super
 BOARD_SUPER_DEVICE_SUPER_DEVICE_SIZE := 5855248384
 BOARD_SUPER_PARTITION_METADATA_DEVICE := super
 
-# Hardware Crypto & FBE v1 Decryption (Android 10 Vendor Base)
+# Hardware Crypto & FBE Decryption Configuration
 TW_INCLUDE_CRYPTO := true
 TW_INCLUDE_CRYPTO_FBE := true
 TW_USE_FSCRYPT_POLICY := 1
+RECOVERY_SDCARD_ON_DATA := true
+
+# Additional Binaries & Libraries Needed for Keymaster 4.0 Decryption
+TARGET_RECOVERY_DEVICE_MODULES += \
+    libkeymaster4 \
+    libpuresoftkeymasterdevice \
+    ashmemd_aidl_interface-cpp \
+    libashmemd_client
+
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libkeymaster4.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libpuresoftkeymasterdevice.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/ashmemd_aidl_interface-cpp.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libashmemd_client.so
 
 # Android Verified Boot (AVB 2.0 Footer required by Transsion LK bootloader)
 BOARD_AVB_ENABLE := true
@@ -124,6 +138,7 @@ OF_QUICK_BACKUP_LIST_ONLY := 1
 TARGET_SCREEN_WIDTH := 720
 TARGET_SCREEN_HEIGHT := 1640
 TW_THEME := portrait_hdpi
+TW_INPUT_BLACKLIST := "hbtp_vm"
 TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
 TW_MAX_BRIGHTNESS := 255
 TW_DEFAULT_BRIGHTNESS := 200
