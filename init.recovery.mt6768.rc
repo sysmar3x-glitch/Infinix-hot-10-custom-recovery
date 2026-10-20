@@ -1,17 +1,65 @@
 on early-init
-    # MediaTek platform symlink resolution
     symlink /dev/block/platform/bootdevice /dev/block/bootdevice
+    symlink /dev/block/platform/bootdevice/by-name /dev/block/by-name
 
 on init
-    # Ensure linker namespace and environment paths are active
     export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/system/lib:/vendor/lib
     setprop sys.usb.configfs 1
+    setprop crypto.ready 1
+    symlink /dev/block/platform/bootdevice /dev/block/bootdevice
+    symlink /dev/block/platform/bootdevice/by-name /dev/block/by-name
+
+on fs
+    symlink /dev/block/platform/bootdevice /dev/block/bootdevice
+    symlink /dev/block/platform/bootdevice/by-name /dev/block/by-name
+    mkdir /mnt/vendor 0755 root root
+    mkdir /mnt/vendor/persist 0755 root root
+    mkdir /mnt/vendor/protect_f 0770 root root
+    mkdir /mnt/vendor/protect_s 0770 root root
+    mkdir /mnt/vendor/nvdata 0771 root root
+    mkdir /mnt/vendor/nvcfg 0771 root root
+    mount ext4 /dev/block/platform/bootdevice/by-name/persist /mnt/vendor/persist noatime nosuid nodev commit=1
+    mount ext4 /dev/block/platform/bootdevice/by-name/protect1 /mnt/vendor/protect_f noatime nosuid nodev commit=1
+    mount ext4 /dev/block/platform/bootdevice/by-name/protect2 /mnt/vendor/protect_s noatime nosuid nodev commit=1
+    mount ext4 /dev/block/platform/bootdevice/by-name/nvdata /mnt/vendor/nvdata noatime nosuid nodev commit=1
+    mount ext4 /dev/block/platform/bootdevice/by-name/nvcfg /mnt/vendor/nvcfg noatime nosuid nodev commit=1
 
 on post-fs
-    # Support bootloader access paths for eMMC
     symlink /dev/block/mmcblk0boot0 /dev/block/platform/bootdevice/by-name/preloader_a
     symlink /dev/block/mmcblk0boot1 /dev/block/platform/bootdevice/by-name/preloader_b
+    mkdir /data/vendor 0755 root root
+    mkdir /data/vendor/thh 0755 root root
+    mkdir /data/vendor/thh/system 0755 root root
+    start hwservicemanager
+    start vndservicemanager
+    start teei_daemon
+    start keymaster-4-0-beanpod
+    start gatekeeper-1-0
 
 on boot
-    # LCD and Touchscreen node initialization
     write /sys/class/leds/lcd-backlight/brightness 200
+
+# Non-blocking background services (NO shutdown critical, NO writepid so boot can never hang)
+service vndservicemanager /vendor/bin/vndservicemanager /dev/vndbinder
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+service teei_daemon /vendor/bin/teei_daemon
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+service keymaster-4-0-beanpod /vendor/bin/hw/android.hardware.keymaster@4.0-service.beanpod
+    user root
+    group root drmrpc
+    disabled
+    seclabel u:r:recovery:s0
+
+service gatekeeper-1-0 /vendor/bin/hw/android.hardware.gatekeeper@1.0-service
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
