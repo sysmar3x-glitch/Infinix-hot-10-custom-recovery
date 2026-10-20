@@ -15,17 +15,20 @@ PRODUCT_MANUFACTURER := Infinix
 # Dynamic Partition Support
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
-# Fastbootd & Core Recovery Packages
+# Fastbootd, Decryption & Core Recovery Packages
 PRODUCT_PACKAGES += \
     android.hardware.fastboot@1.0-impl-mock \
     fastbootd \
+    keystore_auth \
     resetprop \
     toolbox \
     toybox
 
-# Merge Recovery & ADB Properties cleanly into generated prop.default
+# Merge Recovery, Crypto & ADB Properties cleanly into generated prop.default
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.hardware=mt6768 \
+    ro.hardware.kmsetkey=mt6768 \
+    ro.hardware.gatekeeper=mt6768 \
     ro.debuggable=1 \
     ro.adb.secure=0 \
     ro.secure=0 \
