@@ -67,7 +67,7 @@ jobs:
           mkdir -p build/make/target/product/security
           openssl genrsa -out build/make/target/product/security/testkey.pem 4096
 
-          # 3. Create rsync wrapper to prevent out/.../root/vendor symlink from crashing against out/.../recovery/root/vendor directory
+          # 3. Create rsync wrapper to prevent out/.../root/vendor symlink collision
           mkdir -p "$GITHUB_WORKSPACE/bin"
           cat << 'EOF' > "$GITHUB_WORKSPACE/bin/rsync"
           #!/bin/bash
@@ -76,57 +76,105 @@ jobs:
           chmod +x "$GITHUB_WORKSPACE/bin/rsync"
           export PATH="$GITHUB_WORKSPACE/bin:$PATH"
 
-          # 4. Define Ramdisk Destination Root (Preserve /etc -> /system/etc symlink by only writing to /system/etc)
+          # 4. Define Ramdisk Destination Root
           TREE_DIR="$GITHUB_WORKSPACE/workspace/device/infinix/X682C"
           DEST_ROOT="$TREE_DIR/recovery/root"
           rm -rf "$DEST_ROOT/etc" "$DEST_ROOT/prop.default" "$DEST_ROOT/default.prop"
-          mkdir -p "$DEST_ROOT/system/etc"
+          mkdir -p "$DEST_ROOT/system/etc/vintf"
+          mkdir -p "$DEST_ROOT/system/etc/firmware"
+          mkdir -p "$DEST_ROOT/vendor/bin/hw"
+          mkdir -p "$DEST_ROOT/vendor/lib64/hw"
+          mkdir -p "$DEST_ROOT/vendor/firmware"
+          mkdir -p "$DEST_ROOT/vendor/thh/ta"
+          mkdir -p "$DEST_ROOT/vendor/etc/init"
+          mkdir -p "$DEST_ROOT/vendor/etc/vintf"
 
           # 5. Copy Clean FSTAB and Flags strictly to /system/etc
           cp -f "$TREE_DIR/recovery.fstab" "$DEST_ROOT/system/etc/recovery.fstab"
           cp -f "$TREE_DIR/twrp.flags" "$DEST_ROOT/system/etc/twrp.flags"
 
-          # 6. Process and Inject ONLY Touchscreen Firmware from vendor.zip (Saves ~6.5MB of GZIP ramdisk space for Crypto)
+          # 6. Extract Final OTA Blobs & Sync Real Security Patch Level from vendor.zip
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
             echo "Found vendor.zip at: $VENDOR_ZIP"
+            rm -rf /tmp/vendor_extract
             mkdir -p /tmp/vendor_extract
             unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
-            
-            mkdir -p "$DEST_ROOT/vendor/firmware"
-            mkdir -p "$DEST_ROOT/system/etc/firmware"
-            
-            FW_SRC=""
-            if [ -d "/tmp/vendor_extract/vendor/firmware" ]; then
-              FW_SRC="/tmp/vendor_extract/vendor/firmware"
-            elif [ -d "/tmp/vendor_extract/firmware" ]; then
-              FW_SRC="/tmp/vendor_extract/firmware"
+
+            VND_BASE="/tmp/vendor_extract"
+            if [ -d "/tmp/vendor_extract/vendor" ]; then
+              VND_BASE="/tmp/vendor_extract/vendor"
             fi
 
-            if [ -n "$FW_SRC" ]; then
-              # Copy all firmware except heavy Wi-Fi/BT/FM blobs unneeded in recovery
-              find "$FW_SRC" -maxdepth 1 -type f \
+            # 6a. Auto-detect real Vendor Security Patch from extracted build.prop for Beanpod TEE
+            if [ -f "$VND_BASE/build.prop" ]; then
+              REAL_VND_PATCH=$(grep -m1 "^ro.vendor.build.security_patch=" "$VND_BASE/build.prop" | cut -d'=' -f2 | tr -d '\r')
+              if [ -n "$REAL_VND_PATCH" ]; then
+                echo "Detected real OTA vendor security patch: $REAL_VND_PATCH"
+                REAL_YM=$(echo "$REAL_VND_PATCH" | cut -d'-' -f1,2)
+                sed -i "s|^VENDOR_SECURITY_PATCH :=.*|VENDOR_SECURITY_PATCH := $REAL_VND_PATCH|g" "$TREE_DIR/BoardConfig.mk"
+                sed -i "s|^PLATFORM_SECURITY_PATCH :=.*|PLATFORM_SECURITY_PATCH := $REAL_VND_PATCH|g" "$TREE_DIR/BoardConfig.mk"
+                sed -i "s|--os_patch_level [0-9-]*|--os_patch_level $REAL_YM|g" "$TREE_DIR/BoardConfig.mk"
+              fi
+            fi
+
+            # 6b. Copy Touchscreen Firmware
+            if [ -d "$VND_BASE/firmware" ]; then
+              find "$VND_BASE/firmware" -maxdepth 1 -type f \
                 ! -name "WIFI_RAM_CODE*" \
                 ! -name "soc1_0_*" \
                 ! -name "mt6631_*" \
                 -exec cp -f {} "$DEST_ROOT/vendor/firmware/" \; \
                 -exec cp -f {} "$DEST_ROOT/system/etc/firmware/" \;
             fi
-            echo "Touchscreen firmware successfully integrated."
+
+            # 6c. Copy All Beanpod Trusted Applets (.ta)
+            if [ -d "$VND_BASE/thh/ta" ]; then
+              cp -rf "$VND_BASE/thh/ta/"* "$DEST_ROOT/vendor/thh/ta/" || true
+            fi
+
+            # 6d. Copy Decryption Binaries and Set Executable Permissions
+            if [ -d "$VND_BASE/bin" ]; then
+              cp -rf "$VND_BASE/bin/"* "$DEST_ROOT/vendor/bin/" || true
+              find "$DEST_ROOT/vendor/bin" -type f -exec chmod 755 {} \;
+            fi
+
+            # 6e. Copy All Resolved 64-bit Decryption Libraries
+            if [ -d "$VND_BASE/lib64" ]; then
+              cp -af "$VND_BASE/lib64/"* "$DEST_ROOT/vendor/lib64/" || true
+            fi
+
+            # 6f. Copy VINTF Manifest
+            if [ -f "$VND_BASE/etc/vintf/manifest.xml" ]; then
+              cp -f "$VND_BASE/etc/vintf/manifest.xml" "$DEST_ROOT/vendor/etc/vintf/manifest.xml"
+              cp -f "$VND_BASE/etc/vintf/manifest.xml" "$DEST_ROOT/vendor/manifest.xml"
+              cp -f "$VND_BASE/etc/vintf/manifest.xml" "$DEST_ROOT/system/etc/vintf/manifest.xml"
+            fi
+
+            echo "Final OTA vendor blobs integrated successfully."
           fi
 
-          # 7. Inject Init Scripts and Create Valid Unix Symlink for charger
-          echo "Setting up init scripts and true charger symlink..."
+          # 7. Inject Init Scripts, ueventd.rc, and Valid Unix Symlink for charger
           cp -f "$TREE_DIR/init.recovery.usb.rc" "$DEST_ROOT/init.recovery.usb.rc"
           cp -f "$TREE_DIR/init.recovery.mt6768.rc" "$DEST_ROOT/init.recovery.mt6768.rc"
           chmod 750 "$DEST_ROOT/init.recovery.usb.rc"
           chmod 750 "$DEST_ROOT/init.recovery.mt6768.rc"
+
+          if [ -f "$TREE_DIR/init.recovery.microtrust.rc" ]; then
+            cp -f "$TREE_DIR/init.recovery.microtrust.rc" "$DEST_ROOT/init.recovery.microtrust.rc"
+            chmod 750 "$DEST_ROOT/init.recovery.microtrust.rc"
+          fi
+
+          if [ -f "$TREE_DIR/ueventd.rc" ]; then
+            cp -f "$TREE_DIR/ueventd.rc" "$DEST_ROOT/ueventd.rc"
+            chmod 644 "$DEST_ROOT/ueventd.rc"
+          fi
           
           rm -f "$TREE_DIR/charger" "$DEST_ROOT/charger"
           ln -sf /system/bin/charger "$DEST_ROOT/charger"
 
-          # 8. Export OrangeFox Shell Variables (Required by vendor/recovery/OrangeFox_A12.sh to strip ramdisk size)
+          # 8. Export OrangeFox Shell Variables to Keep GZIP Ramdisk < 32MB
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
