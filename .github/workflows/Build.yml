@@ -76,22 +76,17 @@ jobs:
           chmod +x "$GITHUB_WORKSPACE/bin/rsync"
           export PATH="$GITHUB_WORKSPACE/bin:$PATH"
 
-          # 4. Define Ramdisk Destination Root
+          # 4. Define Ramdisk Destination Root (Preserve /etc -> /system/etc symlink by only writing to /system/etc)
           TREE_DIR="$GITHUB_WORKSPACE/workspace/device/infinix/X682C"
           DEST_ROOT="$TREE_DIR/recovery/root"
+          rm -rf "$DEST_ROOT/etc" "$DEST_ROOT/prop.default" "$DEST_ROOT/default.prop"
           mkdir -p "$DEST_ROOT/system/etc"
-          mkdir -p "$DEST_ROOT/etc"
 
-          # CRITICAL: Never place prop.default or default.prop in $DEST_ROOT, or cp -rf at 99% will wipe out the generated Android/OrangeFox prop.default
-          rm -f "$DEST_ROOT/prop.default" "$DEST_ROOT/default.prop"
-
-          # 5. Copy Clean FSTAB and Flags
+          # 5. Copy Clean FSTAB and Flags strictly to /system/etc
           cp -f "$TREE_DIR/recovery.fstab" "$DEST_ROOT/system/etc/recovery.fstab"
-          cp -f "$TREE_DIR/recovery.fstab" "$DEST_ROOT/etc/recovery.fstab"
           cp -f "$TREE_DIR/twrp.flags" "$DEST_ROOT/system/etc/twrp.flags"
-          cp -f "$TREE_DIR/twrp.flags" "$DEST_ROOT/etc/twrp.flags"
 
-          # 6. Process and Inject vendor.zip Firmware (copied via cp -rf at 99%)
+          # 6. Process and Inject ONLY Touchscreen Firmware from vendor.zip (Saves ~6.5MB of GZIP ramdisk space for Crypto)
           echo "Scanning for vendor.zip..."
           VENDOR_ZIP=$(find "$GITHUB_WORKSPACE" -name "vendor.zip" | head -n 1)
           if [ -n "$VENDOR_ZIP" ]; then
@@ -100,27 +95,25 @@ jobs:
             unzip -qo "$VENDOR_ZIP" -d /tmp/vendor_extract
             
             mkdir -p "$DEST_ROOT/vendor/firmware"
-            mkdir -p "$DEST_ROOT/system/vendor/firmware"
-            mkdir -p "$DEST_ROOT/etc/firmware"
+            mkdir -p "$DEST_ROOT/system/etc/firmware"
             
+            FW_SRC=""
             if [ -d "/tmp/vendor_extract/vendor/firmware" ]; then
-              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/vendor/firmware/" || true
-              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/system/vendor/firmware/" || true
-              cp -rf /tmp/vendor_extract/vendor/firmware/* "$DEST_ROOT/etc/firmware/" || true
+              FW_SRC="/tmp/vendor_extract/vendor/firmware"
             elif [ -d "/tmp/vendor_extract/firmware" ]; then
-              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/vendor/firmware/" || true
-              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/system/vendor/firmware/" || true
-              cp -rf /tmp/vendor_extract/firmware/* "$DEST_ROOT/etc/firmware/" || true
+              FW_SRC="/tmp/vendor_extract/firmware"
             fi
 
-            if [ -d "/tmp/vendor_extract/vendor/lib/modules" ]; then
-              mkdir -p "$DEST_ROOT/vendor/lib/modules"
-              cp -rf /tmp/vendor_extract/vendor/lib/modules/* "$DEST_ROOT/vendor/lib/modules/" || true
-            elif [ -d "/tmp/vendor_extract/lib/modules" ]; then
-              mkdir -p "$DEST_ROOT/vendor/lib/modules"
-              cp -rf /tmp/vendor_extract/lib/modules/* "$DEST_ROOT/vendor/lib/modules/" || true
+            if [ -n "$FW_SRC" ]; then
+              # Copy all firmware except heavy Wi-Fi/BT/FM blobs unneeded in recovery
+              find "$FW_SRC" -maxdepth 1 -type f \
+                ! -name "WIFI_RAM_CODE*" \
+                ! -name "soc1_0_*" \
+                ! -name "mt6631_*" \
+                -exec cp -f {} "$DEST_ROOT/vendor/firmware/" \; \
+                -exec cp -f {} "$DEST_ROOT/system/etc/firmware/" \;
             fi
-            echo "Vendor firmware successfully integrated."
+            echo "Touchscreen firmware successfully integrated."
           fi
 
           # 7. Inject Init Scripts and Create Valid Unix Symlink for charger
@@ -133,11 +126,25 @@ jobs:
           rm -f "$TREE_DIR/charger" "$DEST_ROOT/charger"
           ln -sf /system/bin/charger "$DEST_ROOT/charger"
 
-          # 8. Environment Setup & Build Execution
+          # 8. Export OrangeFox Shell Variables (Required by vendor/recovery/OrangeFox_A12.sh to strip ramdisk size)
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           export FOX_BUILD_DEVICE=X682C
+          export FOX_USE_DYNAMIC_PARTITIONS=1
+          export FOX_DRASTIC_SIZE_REDUCTION=1
+          export OFOX_DISABLE_EXTRA_FEATURES=1
+          export FOX_DISABLE_APP_MANAGER=1
+          export FOX_REMOVE_AAPT=1
+          export FOX_EXCLUDE_AR=1
+          export FOX_DELETE_AROMA_FM=1
+          export FOX_DELETE_MAGISK_ADDON=1
+          export FOX_REMOVE_BASH=1
+          export FOX_REMOVE_NANO=1
+          export OF_DONT_KEEP_LOG_HISTORY=1
+          export OF_NO_SPLASH_CHANGE=1
+          export OF_DONT_PATCH_ENCRYPTED_DEVICE=1
+          export OF_NO_TREBLE_COMPATIBILITY_CHECK=1
           export LC_ALL="C"
           
           lunch twrp_X682C-eng
