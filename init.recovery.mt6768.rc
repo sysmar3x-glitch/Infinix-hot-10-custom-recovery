@@ -23,6 +23,9 @@ on fs
 on post-fs
     symlink /dev/block/mmcblk0boot0 /dev/block/platform/bootdevice/by-name/preloader_a
     symlink /dev/block/mmcblk0boot1 /dev/block/platform/bootdevice/by-name/preloader_b
+    # Automatically clear MediaTek BCB ('boot-recovery' flag) in para & misc so Reboot -> System never loops back to recovery
+    exec - root root -- /system/bin/dd if=/dev/zero of=/dev/block/platform/bootdevice/by-name/para bs=2048 count=1
+    exec - root root -- /system/bin/dd if=/dev/zero of=/dev/block/platform/bootdevice/by-name/misc bs=2048 count=1
 
 on boot
     write /sys/class/leds/lcd-backlight/brightness 200
